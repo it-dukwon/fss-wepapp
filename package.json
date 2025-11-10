@@ -1,0 +1,31 @@
+{
+  "name": "databricks-dashboard-app",
+  "version": "1.0.0",
+  "description": "Simple web app to embed Databricks dashboard via OAuth iframe",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "passport": "^0.6.0",
+    "passport-oauth2": "^1.6.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "databricks",
+    "dashboard",
+    "oauth",
+    "iframe",
+    "express"
+  ],
+  "author": "GwangMin",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
