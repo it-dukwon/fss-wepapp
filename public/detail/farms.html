@@ -159,6 +159,7 @@
           td = document.createElement('td');
           const delBtn = document.createElement('button');
           delBtn.textContent = '삭제';
+          delBtn.className = 'delete-btn';
           delBtn.onclick = () => deleteFarm(farm.농장ID);
           td.appendChild(delBtn);
           tr.appendChild(td);
