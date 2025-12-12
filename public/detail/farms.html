@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>농장 관리</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">농장 관리</h2>
+  </header>
+
+  <div id="detail-section">
+    <h2>농장 관리</h2>
+    <table id="farm-table" border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 1em;">
+      <thead>
+        <tr>
+          <th>관리자ID</th><th>관리자</th><th>농장ID</th><th>농장명</th><th>뱃지</th><th>농장주</th><th>지역</th><th>사료회사</th><th>계약상태</th><th>계약시작일</th><th>계약종료일</th><th>수정</th><th>삭제</th>
+        </tr>
+      </thead>
+      <tbody id="farm-tbody"></tbody>
+      <tfoot>
+        <tr id="new-farm-row">
+          <td><input type="number" id="new-관리자ID" /></td>
+          <td><input type="text" id="new-관리자" /></td>
+          <td><input type="number" id="new-농장ID" /></td>
+          <td><input type="text" id="new-농장명" /></td>
+          <td><input type="text" id="new-뱃지" /></td>
+          <td><input type="text" id="new-농장주" /></td>
+          <td><input type="text" id="new-지역" /></td>
+          <td><input type="text" id="new-사료회사" /></td>
+          <td><input type="text" id="new-계약상태" /></td>
+          <td><input type="date" id="new-계약시작일" /></td>
+          <td><input type="date" id="new-계약종료일" /></td>
+          <td colspan="2"><button onclick="addFarm()">추가</button></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <script>
+    const apiBase = 'http://localhost:3000/api/farms';
+
+    async function fetchFarms() {
+      try {
+        const res = await fetch(apiBase);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const data = await res.json();
+        // 서버 응답이 { farms: [...] } 형태라고 가정
+        const farms = data.farms || [];
+        const tbody = document.getElementById('farm-tbody');
+        tbody.innerHTML = '';
+
+        farms.forEach(farm => {
+          const tr = document.createElement('tr');
+          tr.dataset.id = farm.농장ID;
+
+          // 관리자ID
+          let td = document.createElement('td');
+          let input = document.createElement('input');
+          input.type = 'number';
+          input.value = farm.관리자ID ?? '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 관리자
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.관리자 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 농장ID
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'number';
+          input.value = farm.농장ID ?? '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 농장명
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.농장명 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 뱃지
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.뱃지 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 농장주
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.농장주 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 지역
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.지역 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 사료회사
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.사료회사 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 계약상태
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'text';
+          input.value = farm.계약상태 || '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 계약시작일 (날짜만 yyyy-mm-dd 형식으로)
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'date';
+          input.value = farm.계약시작일 ? new Date(farm.계약시작일).toISOString().slice(0,10) : '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 계약종료일
+          td = document.createElement('td');
+          input = document.createElement('input');
+          input.type = 'date';
+          input.value = farm.계약종료일 ? new Date(farm.계약종료일).toISOString().slice(0,10) : '';
+          td.appendChild(input);
+          tr.appendChild(td);
+
+          // 수정 버튼
+          td = document.createElement('td');
+          const editBtn = document.createElement('button');
+          editBtn.textContent = '수정';
+          editBtn.onclick = () => updateFarm(tr);
+          td.appendChild(editBtn);
+          tr.appendChild(td);
+
+          // 삭제 버튼
+          td = document.createElement('td');
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '삭제';
+          delBtn.onclick = () => deleteFarm(farm.농장ID);
+          td.appendChild(delBtn);
+          tr.appendChild(td);
+
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        alert('농장 정보를 불러오는데 실패했습니다: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    async function addFarm() {
+      const farm = {
+        관리자ID: parseInt(document.getElementById('new-관리자ID').value),
+        관리자: document.getElementById('new-관리자').value,
+        농장ID: parseInt(document.getElementById('new-농장ID').value),
+        농장명: document.getElementById('new-농장명').value,
+        뱃지: document.getElementById('new-뱃지').value,
+        농장주: document.getElementById('new-농장주').value,
+        지역: document.getElementById('new-지역').value,
+        사료회사: document.getElementById('new-사료회사').value,
+        계약상태: document.getElementById('new-계약상태').value,
+        계약시작일: document.getElementById('new-계약시작일').value,
+        계약종료일: document.getElementById('new-계약종료일').value,
+      };
+
+      try {
+        const res = await fetch(apiBase, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(farm),
+        });
+
+        if (res.ok) {
+          alert('추가 성공');
+          fetchFarms();
+          document.querySelectorAll('#new-farm-row input').forEach(i => i.value = '');
+        } else {
+          alert('추가 실패');
+        }
+      } catch (error) {
+        alert('추가 중 오류 발생: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    async function updateFarm(tr) {
+      const inputs = tr.querySelectorAll('input');
+      const id = tr.dataset.id;
+
+      const farm = {
+        관리자ID: parseInt(inputs[0].value),
+        관리자: inputs[1].value,
+        농장ID: parseInt(inputs[2].value),
+        농장명: inputs[3].value,
+        뱃지: inputs[4].value,
+        농장주: inputs[5].value,
+        지역: inputs[6].value,
+        사료회사: inputs[7].value,
+        계약상태: inputs[8].value,
+        계약시작일: inputs[9].value,
+        계약종료일: inputs[10].value,
+      };
+
+      try {
+        const res = await fetch(`${apiBase}/${id}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(farm),
+        });
+
+        if (res.ok) {
+          alert('수정 성공');
+          fetchFarms();
+        } else {
+          alert('수정 실패');
+        }
+      } catch (error) {
+        alert('수정 중 오류 발생: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    async function deleteFarm(id) {
+      if (!confirm('삭제하시겠습니까?')) return;
+
+      try {
+        const res = await fetch(`${apiBase}/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (res.ok) {
+          alert('삭제 성공');
+          fetchFarms();
+        } else {
+          alert('삭제 실패');
+        }
+      } catch (error) {
+        alert('삭제 중 오류 발생: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    // 초기 데이터 로드
+    fetchFarms();
+  </script>
+</body>
+</html>
