@@ -85,7 +85,7 @@ async function getDatabricksToken() {
       { headers: { "Content-Type": "application/x-www-form-urlencoded" }, maxRedirects: 0 }
     );
 
-    // console.log('Token response data (partial):', JSON.stringify(response.data).slice(0, 300));
+    console.log('Token response data (partial):', JSON.stringify(response.data).slice(0, 300));
 
     if (response.data && response.data.access_token) {
       return response.data.access_token;
@@ -161,7 +161,7 @@ app.get("/api/farms", async (req, res) => {
     const token = await getDatabricksToken();
     const raw = await runDatabricksSQL(token, "SELECT * FROM dbx_dukwon.auto_dukwon.list_farms ORDER BY `농장ID` ASC;");
 
-    // console.log('/api/farms raw result (sample):', JSON.stringify(raw).slice(0, 1000));
+    console.log('/api/farms raw result (sample):', JSON.stringify(raw).slice(0, 1000));
 
     let farms = [];
 
@@ -267,7 +267,7 @@ app.post("/api/farms", async (req, res) => {
       )
     `;
 
-    // console.log('INSERT SQL:', sql.slice(0, 1000));
+    console.log('INSERT SQL:', sql.slice(0, 1000));
     await runDatabricksSQL(token, sql);
 
     res.json({ message: "Farm added" });
@@ -314,7 +314,7 @@ app.put("/api/farms/:id", async (req, res) => {
       WHERE \`농장ID\` = ${idNum}
     `;
 
-    // console.log('UPDATE SQL:', sql);
+    console.log('UPDATE SQL:', sql);
     await runDatabricksSQL(token, sql);
 
     res.json({ message: "Farm updated" });
@@ -331,7 +331,7 @@ app.delete("/api/farms/:id", async (req, res) => {
     if (Number.isNaN(idNum)) return res.status(400).json({ error: 'Invalid id' });
 
     const sql = `DELETE FROM dbx_dukwon.auto_dukwon.list_farms WHERE \`농장ID\` = ${idNum}`;
-    // console.log('DELETE SQL:', sql);
+    console.log('DELETE SQL:', sql);
 
     const token = await getDatabricksToken();
     await runDatabricksSQL(token, sql);
