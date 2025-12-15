@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const cors = require('cors');
 const fs = require("fs");
 const { DataLakeServiceClient } = require("@azure/storage-file-datalake");
 const dayjs = require("dayjs");
@@ -18,19 +19,55 @@ const app = express();
 const upload = multer({ dest: "uploads/" });
 const PORT = process.env.PORT || 3000;
 
-const cors = require('cors');
+/**
+ * 1) 요청 로깅 미들웨어 - 반드시 가장 먼저 등록
+ *    정적 파일 요청도 포함해 모든 요청이 로그에 찍히도록 함
+ */
+app.use((req, res, next) => {
+  console.log(new Date().toISOString(), req.method, req.originalUrl, 'Origin=', req.headers.origin || '-');
+  next();
+});
 
-app.use(cors({
-  origin: [
-    // '*',
-    'http://localhost:3000',
-    'https://webapp-databricks-dashboard-c7a3fjgmb7d3dnhn.koreacentral-01.azurewebsites.net'
-  ],
+/**
+ * 2) CORS 설정 - whitelist 검사 후 요청 Origin을 반사(reflect)하도록 처리
+ *    credentials: true 이므로 Access-Control-Allow-Origin은 '*'가 될 수 없음
+ */
+const whitelist = [
+  'http://localhost:3000',
+  'https://webapp-databricks-dashboard-c7a3fjgmb7d3dnhn.koreacentral-01.azurewebsites.net'
+];
+
+const corsOptions = {
+  origin: function(origin, callback) {
+    // origin이 없는 경우(server-to-server 요청, curl 등)는 허용
+    if (!origin) return callback(null, true);
+    if (whitelist.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-}));
+  optionsSuccessStatus: 200
+};
 
+app.use(cors(corsOptions));
+// 명시적으로 OPTIONS 프리플라이트 처리
+app.options('*', cors(corsOptions));
+
+/**
+ * 3) 바디 파서 등 전역 미들웨어
+ */
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+/**
+ * 4) 정적 파일 서빙 (public 폴더)
+ *    정적 파일은 여기서 서빙되며, 위의 로깅 미들웨어로 요청이 찍힙니다.
+ */
 app.use(express.static(path.join(__dirname, "public")));
+
+
+
+
+
 
 // --- 메인 페이지 & 파일 업로드 ---
 app.get("/", (req, res) => {
@@ -150,6 +187,17 @@ function toDateInputValue(dateString) {
   if (isNaN(d)) return '';
   return d.toISOString().slice(0, 10);
 }
+
+
+
+
+
+
+
+
+
+
+
 
 // --- CRUD API: list_farms 테이블 ---
 
