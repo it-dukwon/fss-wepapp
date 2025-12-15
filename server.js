@@ -210,7 +210,7 @@ app.get("/api/farms", async (req, res) => {
     const token = await getDatabricksToken();
     const raw = await runDatabricksSQL(token, "SELECT * FROM dbx_dukwon.auto_dukwon.list_farms ORDER BY `농장ID` ASC;");
 
-    console.log('/api/farms raw result (sample):', JSON.stringify(raw).slice(0, 1000));
+    console.log('/api/farms raw result (sample):', JSON.stringify(raw).slice(0, 100));
 
     let farms = [];
 
