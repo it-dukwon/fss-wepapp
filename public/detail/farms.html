@@ -55,7 +55,31 @@
     </table>
   </div>
 
+
+
+  <!-- SweetAlert2 라이브러리 불러오기 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
+    // 성공 팝업 함수
+    function showSuccessPopup() {
+      Swal.fire({
+        icon: 'success',
+        title: '성공!',
+        text: '데이터가 정상적으로 저장되었습니다.',
+        confirmButtonText: '확인'
+      });
+    }
+
+    // 에러 팝업 함수 (필요할 때 사용)
+    function showErrorPopup(message) {
+      Swal.fire({
+        icon: 'error',
+        title: '오류 발생',
+        text: message || '처리 중 문제가 발생했습니다.',
+        confirmButtonText: '닫기'
+      });
+    }
+
     // API 기본 경로 (개발: localhost). 배포 시 주석된 대체 경로를 사용하세요.
     // const apiBase = 'http://localhost:3000/api/farms';
     const apiBase =
@@ -215,7 +239,7 @@
       } catch (error) {
         tbody.innerHTML = '';
         console.error('fetchFarms 오류:', error);
-        alert('농장 정보를 불러오는데 실패했습니다: ' + (error.message || error));
+        showErrorPopup('농장 정보를 불러오는데 실패했습니다: ' + (error.message || error));
       }
     }
 
@@ -242,17 +266,18 @@
         });
 
         if (res.ok) {
-          alert('추가 성공');
+          // 성공팝업
+          showSuccessPopup();
           clearNewFarmInputs();
           fetchFarms();
         } else {
           const text = await res.text();
           console.error('추가 실패 응답:', res.status, text);
-          alert('추가 실패: ' + res.status);
+          showErrorPopup('추가 실패: ' + res.status);
         }
       } catch (error) {
         console.error('addFarm 오류:', error);
-        alert('추가 중 오류 발생: ' + (error.message || error));
+        showErrorPopup('추가 중 오류 발생: ' + (error.message || error));
       }
     }
 
@@ -264,7 +289,7 @@
       const inputs = tr.querySelectorAll('input');
       const id = tr.dataset.id;
       if (!id) {
-        alert('유효한 농장ID가 없습니다.');
+        showErrorPopup('유효한 농장ID가 없습니다.');
         return;
       }
 
@@ -292,22 +317,23 @@
         });
 
         if (res.ok) {
-          alert('수정 성공');
+          // 성공
+          showSuccessPopup();
           fetchFarms();
         } else {
           const text = await res.text();
           console.error('수정 실패 응답:', res.status, text);
-          alert('수정 실패: ' + res.status);
+          showErrorPopup('수정 실패: ' + res.status);
         }
       } catch (error) {
         console.error('updateFarm 오류:', error);
-        alert('수정 중 오류 발생: ' + (error.message || error));
+        showErrorPopup('수정 중 오류 발생: ' + (error.message || error));
       }
     }
 
     async function deleteFarm(id) {
       if (!id) {
-        alert('유효한 농장ID가 없습니다.');
+        showErrorPopup('유효한 농장ID가 없습니다.');
         return;
       }
       if (!confirm('삭제하시겠습니까?')) return;
@@ -318,16 +344,17 @@
         });
 
         if (res.ok) {
-          alert('삭제 성공');
+          // 성공
+          showSuccessPopup();
           fetchFarms();
         } else {
           const text = await res.text();
           console.error('삭제 실패 응답:', res.status, text);
-          alert('삭제 실패: ' + res.status);
+          showErrorPopup('삭제 실패: ' + res.status);
         }
       } catch (error) {
         console.error('deleteFarm 오류:', error);
-        alert('삭제 중 오류 발생: ' + (error.message || error));
+        showErrorPopup('삭제 중 오류 발생: ' + (error.message || error));
       }
     }
 
