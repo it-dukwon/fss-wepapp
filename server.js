@@ -156,6 +156,7 @@ function toDateInputValue(dateString) {
 // 모든 농장 조회
 app.get("/api/farms", async (req, res) => {
   console.log("GET /api/farms 요청 도착");
+  console.log('REQ', req.method, req.originalUrl, 'Origin=', req.headers.origin);
 
   try {
     const token = await getDatabricksToken();
