@@ -22,7 +22,7 @@ const cors = require('cors');
 
 app.use(cors({
   origin: [
-    '*',
+    // '*',
     'http://localhost:3000',
     'https://webapp-databricks-dashboard-c7a3fjgmb7d3dnhn.koreacentral-01.azurewebsites.net'
   ],
