@@ -26,19 +26,21 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "@azure/identity": "^4.13.0",
     "@azure/msal-node": "^3.8.4",
     "@azure/storage-blob": "^12.29.1",
     "@azure/storage-file-datalake": "^12.28.1",
     "@databricks/sql": "^1.12.0",
     "axios": "^1.13.2",
     "az": "^0.2.3",
+    // "body-parser": "^2.2.1",
     "cors": "^2.8.5",
     "dayjs": "^1.11.19",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "express-session": "^1.18.2",
     "multer": "^2.0.2",
+    // "passport": "^0.6.0",
+    // "passport-oauth2": "^1.6.1",
     "pg": "^8.16.3"
   },
   "devDependencies": {
