@@ -19,6 +19,7 @@ const { attachEntraAuth } = require("./auth/entraAuth");
 // ✅ 분리한 모듈
 const { runPgQuery, closePool } = require("./db/pg");
 const farmsRoutes = require("./routes/farms");
+const boardRoutes = require("./routes/board");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -47,6 +48,27 @@ app.use(
 
 // Entra 라우트 등록 (/login, /auth/login, /auth/redirect, /logout)
 const { ensureAuth } = attachEntraAuth(app);
+
+// ADMIN_UPNS 환경변수 → Set으로 변환
+const ADMIN_UPNS = new Set(
+  (process.env.ADMIN_UPNS || "")
+    .split(",")
+    .map(v => v.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+function isAdminUser(req) {
+  const upn = req.session?.user?.preferred_username;
+  if (!upn) return false;
+  return ADMIN_UPNS.has(String(upn).toLowerCase());
+}
+
+function ensureAdmin(req, res, next) {
+  if (!req.session?.user) return res.status(401).json({ error: "Unauthorized" });
+  if (!isAdminUser(req)) return res.status(403).json({ error: "Forbidden" });
+  next();
+}
+
 
 // ------------------------------------------------------------
 // 1) 요청 로깅 (가장 먼저)
@@ -94,10 +116,16 @@ app.use(express.urlencoded({ extended: false }));
 // ------------------------------------------------------------
 app.get("/api/me", (req, res) => {
   if (req.session && req.session.user) {
-    return res.json({ authenticated: true, user: req.session.user });
+    return res.json({
+      authenticated: true,
+      user: req.session.user,
+      isAdmin: isAdminUser(req),
+    });
   }
-  return res.status(401).json({ authenticated: false });
+  return res.status(401).json({ authenticated: false, isAdmin: false });
 });
+
+console.log("ensureAdmin typeof:", typeof ensureAdmin);
 
 // ------------------------------------------------------------
 // /api 보호
@@ -237,9 +265,11 @@ async function runDatabricksSQL(token, sql) {
 }
 
 // ------------------------------------------------------------
-// Farms CRUD 라우터 (분리)
+// CRUD 라우터
 // ------------------------------------------------------------
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
+app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
+
 
 // ------------------------------------------------------------
 // Databricks SQL 테스트용
@@ -283,6 +313,20 @@ app.get("/dashboard", (req, res) => {
     </html>
   `);
 });
+
+
+
+// ------------------------------------------------------------
+// 게시판 리스트/상세 페이지 (정적 파일 sendFile)
+// ------------------------------------------------------------
+app.get("/board", ensureAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "detail", "board.html"));
+});
+
+app.get("/board/:id", ensureAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "detail", "board-detail.html"));
+});
+
 
 // ------------------------------------------------------------
 // 종료 처리(로컬 개발 편의)

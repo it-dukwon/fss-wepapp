@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>공지사항 상세</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">공지사항 상세</h2>
+  </header>
+
+    
+  <div id="detail-section">
+
+    <div class="board-wrap">
+        <p class="board-back">
+        <a class="link" href="/board">← 목록</a>
+        </p>
+
+        <article class="board-card board-post">
+        <h2 id="title" class="board-post-title">...</h2>
+        <div id="meta" class="muted board-meta"></div>
+
+        <hr class="board-hr" />
+
+        <pre id="body" class="board-body"></pre>
+
+        <!-- ✅ 관리자만 보이는 수정/삭제 -->
+        <section class="board-edit" data-admin-only style="display:none;">
+            <h3 class="board-card-title">관리자: 수정</h3>
+
+            <div class="board-field">
+            <label class="board-label" for="editTitle">제목</label>
+            <input id="editTitle" class="board-input" />
+            </div>
+
+            <div class="board-field">
+            <label class="board-label" for="editBody">내용</label>
+            <textarea id="editBody" class="board-textarea"></textarea>
+            </div>
+
+            <div class="board-actions">
+            <button class="btn primary" id="btnSave">저장</button>
+            <button class="btn danger" id="btnDelete">삭제</button>
+            <span class="muted" id="msg"></span>
+            </div>
+        </section>
+        </article>
+    </div>
+  </div>
+
+  <script src="/js/board-detail.js"></script>
+</body>
+</html>

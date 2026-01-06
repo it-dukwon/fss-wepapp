@@ -11,6 +11,7 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
   />
   <script src="/js/auth-gate.js"></script>
+  
 </head>
 <body>
   <div class="page-bg">
@@ -24,10 +25,9 @@
 
         <nav class="nav">
           <a class="nav-item nav-item--active" href="#">홈</a>
-          <a class="nav-item" href="detail/board.html">게시판</a>
+          <!-- <a class="nav-item" href="#">업무관리</a> -->
           <a class="nav-item" href="#">setting</a>
-          <!-- 기존 링크 유지해도 되지만, 버튼을 따로 넣었으니 링크는 제거/유지 선택 -->
-          <!-- <a class="nav-item" href="/logout">logout</a> -->
+          <a class="nav-item" href="logout">logout</a>
         </nav>
 
         <div class="actions">
@@ -42,12 +42,6 @@
           <div class="avatar" title="사용자">
             <span>🙂</span>
           </div>
-
-          <!-- ✅ 로그아웃 버튼 -->
-          <button class="logout-btn" type="button" id="logoutBtn" aria-label="로그아웃">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>로그아웃</span>
-          </button>
         </div>
       </header>
 
@@ -63,6 +57,7 @@
 
       <!-- Content -->
       <section class="content">
+
         <!-- Quick cards row -->
         <div class="quick-row">
           <div class="quick-card">
@@ -85,9 +80,9 @@
               <i class="fa-solid fa-house"></i>
               <span>농장 관리</span>
             </a>
-            <a class="quick-link" href="detail/board.html">
-              <i class="fa-solid fa-clipboard"></i>
-              <span>게시판</span>
+            <a class="quick-link" href="detail/farms.html">
+              <i class="fa-solid fa-house"></i>
+              <span>농장 관리</span>
             </a>
           </div>
         </div>
@@ -103,12 +98,9 @@
           <a class="grid-item" href="#">
             <i class="fa-solid fa-calendar"></i><span>일정 관리</span>
           </a>
-
-          <!-- ✅ 게시판 링크 하나 더(원하면 유지) -->
-          <a class="grid-item" href="detail/board.html">
-            <i class="fa-solid fa-clipboard"></i><span>게시판</span>
+          <a class="grid-item" href="#">
+            <i class="fa-solid fa-clipboard"></i><span>클립보드 아이콘</span>
           </a>
-
           <a class="grid-item" href="#">
             <i class="fa-solid fa-envelope"></i><span>이메일 아이콘</span>
           </a>
@@ -135,14 +127,9 @@
             <i class="fa-solid fa-user"></i><span>유저 아이콘</span>
           </a>
         </div>
+
       </section>
     </main>
   </div>
-
-  <script>
-    document.getElementById("logoutBtn")?.addEventListener("click", () => {
-      window.location.href = "/logout";
-    });
-  </script>
 </body>
 </html>

@@ -280,7 +280,7 @@ body{
 /* Background like screenshot */
 .page-bg{
   min-height: 100vh;
-  padding: 28px 18px 50px;
+  padding: 15px 18px 15px;
   background:
     radial-gradient(900px 400px at 50% 0%, rgba(20,108,67,0.10), transparent 60%),
     linear-gradient(#EEF2EF, #F5F7F6);
@@ -295,7 +295,7 @@ body{
   box-shadow: 0 10px 30px rgba(0,0,0,0.06);
   overflow: hidden;
 
-  min-height: calc(100vh - 28px - 50px); /* page-bg top/bottom padding만큼 빼줌 */
+  min-height: calc(100vh - 15px - 15px); /* page-bg top/bottom padding만큼 빼줌 */
   display: flex;
   flex-direction: column;
 
@@ -405,8 +405,8 @@ body{
     var(--hero-image);
   background-repeat:no-repeat;
   background-position: center center;
-  /* background-size: cover; */
-  background-size: contain;
+  background-size: cover;
+  /* background-size: contain; */
   /* border-bottom: 1px solid var(--line); */
 
 }
@@ -547,4 +547,203 @@ body{
   .hero-copy h1{ font-size: 34px; }
   .icon-grid{ grid-template-columns: repeat(3, 1fr); }
   .search{ width:100%; }
+}
+
+/* ===== Logout Button (index topbar) ===== */
+.logout-btn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.75);
+  cursor: pointer;
+  font-weight: 700;
+  color: #1F2933;
+}
+.logout-btn:hover{
+  background: rgba(20,108,67,0.10);
+}
+
+/* ===== Board Detail ===== */
+.board-toolbar{
+  width: 100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.board-back{
+  text-decoration:none;
+  font-weight:700;
+  color: #146C43;
+}
+.board-back:hover{ text-decoration: underline; }
+
+.board-post{
+  width: min(920px, 100%);
+  margin: 0 auto;
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 18px;
+  padding: 18px 18px;
+  text-align: left;
+}
+.board-post h2{
+  margin: 6px 0 8px;
+  font-size: 22px;
+}
+.post-meta{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  color: #6B7280;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.post-meta .dot{ opacity: 0.7; }
+
+.post-body{
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: #1F2933;
+}
+
+
+/* ===== Board (List + Common) =====
+   farm.html(테이블/버튼) 느낌과 최대한 맞춘 게시판 스타일
+   - board.html / board-detail.html에서 inline style 제거하고
+     아래 클래스들을 쓰면 전체 통일감이 생깁니다.
+================================= */
+
+/* 게시판 공통: 가운데 정렬된 본문 영역(테이블 페이지 느낌) */
+.board-wrap{
+  width: min(1100px, 96vw);
+  margin: 0 auto;
+  padding: 18px 18px 30px;
+  text-align: left;
+}
+
+/* 상단 상태(로그인/관리자) */
+.board-me{
+  margin: 6px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 박스/카드 */
+.board-card{
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 18px;
+  padding: 14px 14px;
+}
+
+/* 관리자 등록 폼(카드 형태) */
+.board-admin{
+  margin: 14px 0 18px;
+}
+.board-admin h3{
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.board-field{
+  margin: 8px 0;
+}
+.board-field input,
+.board-field textarea{
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  text-align: left; /* farms 입력은 가운데지만 게시글은 좌측이 읽기 좋음 */
+}
+.board-field textarea{ min-height: 120px; resize: vertical; }
+
+/* 버튼: 기존 farms 버튼 톤과 통일 */
+.btn{
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-decoration: none;
+}
+.btn:hover{ background-color:#005fa3; }
+.btn.primary{ background-color:#ffc107; color:#111; }
+.btn.primary:hover{ background-color:#e0a800; }
+.btn.edit{ background-color:#17a2b8; }
+.btn.edit:hover{ background-color:#117a8b; }
+.btn.danger{ background-color:#d9534f; }
+.btn.danger:hover{ background-color:#c9302c; }
+
+.board-msg{
+  margin-left: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 목록 테이블(기존 table 전역 스타일 영향 최소화 위해 클래스 권장) */
+.board-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  margin: 14px auto;
+  background: #fff;
+}
+.board-table th,
+.board-table td{
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+.board-table thead th{
+  background-color: #cfcfcf;
+  font-weight: 600;
+  color: #222;
+}
+.board-table a{
+  color: var(--green-main);
+  text-decoration: none;
+  font-weight: 700;
+}
+.board-table a:hover{ text-decoration: underline; }
+
+/* 목록의 관리 버튼 셀 */
+.board-row-actions{
+  white-space: nowrap;
+}
+.board-row-actions .btn{ margin-right: 6px; }
+
+/* 상세 페이지: 기존 Board Detail 스타일과 보완 */
+.board-post pre.post-body{ margin: 0; }
+.board-edit{
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.board-edit h3{
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.board-edit .btn{ margin-right: 6px; }
+
+/* 반응형: 너무 좁아지면 padding 축소 */
+@media (max-width: 520px){
+  .board-wrap{ padding: 12px 12px 22px; }
+  .board-table{ font-size: 0.85rem; }
 }
