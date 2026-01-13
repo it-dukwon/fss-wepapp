@@ -14,50 +14,47 @@
   </header>
 
     
-  <div id="detail-section">
-    <div class="board-wrap">
-        <!-- <h1 class="page-title">공지사항</h1> -->
+    <!-- public/detail/board.html 일부 교체 -->
+  <div class="notice-wrap">
 
-        <div id="meBox" class="board-me muted"></div>
-
-        <!-- ✅ 관리자만 보이는 등록 폼 -->
-        <section class="board-card board-admin" data-admin-only style="display:none;">
-        <h3 class="board-card-title">글 등록</h3>
-
-        <div class="board-field">
-            <label class="board-label" for="newTitle">제목</label>
-            <input id="newTitle" class="board-input" placeholder="제목" />
-        </div>
-
-        <div class="board-field">
-            <label class="board-label" for="newBody">내용</label>
-            <textarea id="newBody" class="board-textarea" placeholder="내용"></textarea>
-        </div>
-
-        <div class="board-actions">
-            <button class="btn primary" id="btnCreate">등록</button>
-            <span id="createMsg" class="muted"></span>
-        </div>
-        </section>
-
-        <h3 class="section-title">목록</h3>
-
-        <div class="table-wrap">
-        <table class="board-table">
-            <thead>
-            <tr>
-                <th class="col-id">ID</th>
-                <th>제목</th>
-                <th class="col-meta">작성/수정</th>
-                <th class="col-actions" data-admin-only style="display:none;">관리</th>
-            </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-        </table>
-        </div>
-    </div>
+    <div class="notice-head">
+      <h3 class="notice-title">공지사항</h3>
+      <div id="meBox" class="notice-login muted"></div>
     </div>
 
-  <script src="/js/board.js"></script>
+    <!-- 관리자 등록: 접어두고 admin만 보이게 -->
+    <details class="notice-admin" data-admin-only style="display:none;">
+      <summary>공지 등록</summary>
+
+      <div class="notice-form">
+        <input id="newTitle" class="notice-input" placeholder="제목" />
+        <textarea id="newBody" class="notice-textarea" placeholder="내용"></textarea>
+
+        <div class="notice-actions">
+          <button class="btn primary" id="btnCreate">등록</button>
+          <span id="createMsg" class="muted"></span>
+        </div>
+      </div>
+    </details>
+
+    <div class="notice-table-wrap">
+      <table class="notice-table">
+        <thead>
+          <tr>
+            <th class="col-no">번호</th>
+            <th>제목</th>
+            <th class="col-date">등록/수정일</th>
+            <th class="col-admin" data-admin-only style="display:none;">관리</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+
+  <script src="/js/board-list.js"></script>
 </body>
 </html>

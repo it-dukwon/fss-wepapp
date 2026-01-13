@@ -27,29 +27,25 @@ async function loadList() {
   tbody.innerHTML = "";
 
   for (const p of data.posts || []) {
-    const tr = document.createElement("tr");
-
-    const tdId = document.createElement("td");
-    tdId.textContent = p.id;
-    tr.appendChild(tdId);
+    // created_at만 쓰고, updated_at은 목록에선 숨김(상세에서만)
+    const tdNo = document.createElement("td");
+    tdNo.className = "col-no";
+    tdNo.textContent = p.id; // 또는 역순 번호로 바꾸고 싶으면 여기에서 계산
+    tr.appendChild(tdNo);
 
     const tdTitle = document.createElement("td");
     const a = document.createElement("a");
+    a.className = "notice-link";
     a.href = `/board/${encodeURIComponent(p.id)}`;
     a.textContent = p.title;
     tdTitle.appendChild(a);
     tr.appendChild(tdTitle);
 
-    const tdMeta = document.createElement("td");
-    tdMeta.innerHTML =
-      `<div class="muted">작성: ${formatDate(p.created_at)}</div>` +
-      `<div class="muted">수정: ${formatDate(p.updated_at)}</div>`;
-    tr.appendChild(tdMeta);
+    const tdDate = document.createElement("td");
+    tdDate.className = "col-date";
+    tdDate.textContent = formatDate(p.created_at).split(" ").slice(0, 1).join(" "); // 날짜만 대충(원하면 yyyy-mm-dd로 확정 가능)
+    tr.appendChild(tdDate);
 
-    const tdActions = document.createElement("td");
-    tdActions.className = "row-actions";
-    tdActions.setAttribute("data-admin-only", "");
-    tdActions.style.display = me.isAdmin ? "" : "none";
 
     if (me.isAdmin) {
       const btnEdit = document.createElement("button");

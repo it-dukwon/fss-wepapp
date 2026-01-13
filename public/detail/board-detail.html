@@ -21,35 +21,28 @@
         <a class="link" href="/board">← 목록</a>
         </p>
 
-        <article class="board-card board-post">
-        <h2 id="title" class="board-post-title">...</h2>
-        <div id="meta" class="muted board-meta"></div>
+        <article class="notice-detail">
+          <h2 id="title" class="notice-detail-title">...</h2>
+          <div id="meta" class="notice-detail-meta muted"></div>
 
-        <hr class="board-hr" />
+          <div id="body" class="notice-detail-body"></div>
 
-        <pre id="body" class="board-body"></pre>
+          <details class="notice-admin" data-admin-only style="display:none;">
+            <summary>관리자: 수정/삭제</summary>
 
-        <!-- ✅ 관리자만 보이는 수정/삭제 -->
-        <section class="board-edit" data-admin-only style="display:none;">
-            <h3 class="board-card-title">관리자: 수정</h3>
+            <div class="notice-form">
+              <input id="editTitle" class="notice-input" />
+              <textarea id="editBody" class="notice-textarea"></textarea>
 
-            <div class="board-field">
-            <label class="board-label" for="editTitle">제목</label>
-            <input id="editTitle" class="board-input" />
+              <div class="notice-actions">
+                <button class="btn primary" id="btnSave">저장</button>
+                <button class="btn danger" id="btnDelete">삭제</button>
+                <span class="muted" id="msg"></span>
+              </div>
             </div>
-
-            <div class="board-field">
-            <label class="board-label" for="editBody">내용</label>
-            <textarea id="editBody" class="board-textarea"></textarea>
-            </div>
-
-            <div class="board-actions">
-            <button class="btn primary" id="btnSave">저장</button>
-            <button class="btn danger" id="btnDelete">삭제</button>
-            <span class="muted" id="msg"></span>
-            </div>
-        </section>
+          </details>
         </article>
+        
     </div>
   </div>
 

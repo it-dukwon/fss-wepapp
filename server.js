@@ -18,8 +18,8 @@ const { attachEntraAuth } = require("./auth/entraAuth");
 
 // ✅ 분리한 모듈
 const { runPgQuery, closePool } = require("./db/pg");
-const farmsRoutes = require("./routes/farms");
-const boardRoutes = require("./routes/board");
+const farmsRoutes = require("./routes/farms-routes");
+const boardRoutes = require("./routes/board-routes");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
