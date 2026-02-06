@@ -90,7 +90,7 @@ html, body {
 }
 
 /* detail 페이지 main 자리 */
-.detail-section {
+#detail-section {
   display: flex;
   flex-direction: column;
   padding: 20px;
@@ -100,7 +100,14 @@ html, body {
 }
 
 /* 대시보드 페이지 */
-/* dashboard-title removed (unused) */
+.dashboard-title {
+  margin: 0;
+  padding: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
 #status {
   margin-left: 10px;
@@ -110,7 +117,7 @@ html, body {
 }
 
 /* iframe 전체 화면 채우기 */
-.dashboard-frame {
+iframe#dashboardFrame {
   position: absolute;
   top: 72px;
   left: 0;
@@ -212,10 +219,10 @@ button:hover {
   background-color: #005fa3;
 }
 /* 등록 버튼 (노란색 톤 조정) */
-.add-btn {
+#add-btn {
   background-color: #ffc107;
 }
-.add-btn:hover {
+#add-btn:hover {
   background-color: #e0a800;
 }
 /* 수정 버튼 (청록색) */
@@ -232,9 +239,6 @@ button:hover {
 .delete-btn:hover {
   background-color: #c9302c;
 }
-
-
-
 
 
 
@@ -559,7 +563,15 @@ body{
   background: rgba(20,108,67,0.10);
 }
 
-.board-toolbar{ /* removed: unused */ }
+/* ===== Board Detail ===== */
+.board-toolbar{
+  width: 100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
 .board-back{
   text-decoration:none;
   font-weight:700;
@@ -576,6 +588,7 @@ body{
   padding: 18px 18px;
   text-align: left;
 }
+
 .board-post h2{
   margin: 6px 0 8px;
   font-size: 22px;
@@ -595,6 +608,7 @@ body{
   line-height: 1.7;
   color: #1F2933;
 }
+
 
 
 /* ===== Board (List + Common) =====
@@ -732,11 +746,6 @@ body{
   .board-wrap{ padding: 12px 12px 22px; }
   .board-table{ font-size: 0.85rem; }
 }
-
-
-
-
-
 
 
 

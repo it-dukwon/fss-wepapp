@@ -14,14 +14,14 @@
   </header>
 
   <iframe
-    id="dashboardFrame"
+    class="dashboard-frame"
     src="https://adb-3997551919284009.9.azuredatabricks.net/embed/dashboardsv3/01f0bba8df9b1c0ebcf5dc38714d79aa?o=3997551919284009"
   ></iframe>
 
   <script>
     function resizeDashboard() {
       const topSection = document.getElementById("page-header");
-      const dashboardFrame = document.getElementById("dashboardFrame");
+      const dashboardFrame = document.querySelector(".dashboard-frame");
       const topHeight = topSection ? topSection.offsetHeight : 0;
       dashboardFrame.style.height = `${window.innerHeight - topHeight}px`;
     }

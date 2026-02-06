@@ -270,7 +270,7 @@ async function deleteFarm(id) {
 }
 
 // 이벤트 바인딩 - Create 버튼 연결 (페이지에 요소가 있는 경우에만)
-const addBtn = document.getElementById('add-btn');
+const addBtn = document.querySelector('.add-btn');
 if (addBtn) addBtn.addEventListener('click', addFarm);
 
 // 초기 데이터 로드 (DOM 준비 후) — farms 테이블이 있는 페이지에만 호출
