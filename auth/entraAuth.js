@@ -8,16 +8,18 @@ const { ConfidentialClientApplication } = require("@azure/msal-node");
  */
 function attachEntraAuth(app) {
   const {
-    TENANT_ID,
-    CLIENT_ID,
-    CLIENT_SECRET,
     ENTRA_REDIRECT_URI,
     POST_LOGOUT_REDIRECT_URI,
   } = process.env;
 
+  // Prefer AZURE_ prefixed env vars; fall back to older names if present
+  const TENANT_ID = process.env.AZURE_TENANT_ID || process.env.TENANT_ID;
+  const CLIENT_ID = process.env.AZURE_CLIENT_ID || process.env.CLIENT_ID;
+  const CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET || process.env.CLIENT_SECRET;
+
   if (!TENANT_ID || !CLIENT_ID || !CLIENT_SECRET || !ENTRA_REDIRECT_URI) {
     console.warn(
-      "[EntraAuth] Missing env vars. Required: TENANT_ID, CLIENT_ID, CLIENT_SECRET, ENTRA_REDIRECT_URI"
+      "[EntraAuth] Missing env vars. Required: AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, ENTRA_REDIRECT_URI"
     );
   }
 

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>농장 관리</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">DB 관리</h2>
+  </header>
+
+  <div id="detail-section">
+    <h2>DB 관리</h2>
+
+    <button id="stopDbBtn">Stop DB</button>
+    <button id="startDbBtn">Start DB</button>
+
+  </div>
+
+
+      <script>
+      (function(){
+        let resolvedDefaults = { resourceGroup: null, serverName: null, subscriptionId: null };
+
+        // Load server-side defaults (from .env via /api/azure-postgres/defaults)
+        async function loadDefaults() {
+          try {
+            const r = await fetch('/api/azure-postgres/defaults', { credentials: 'same-origin' });
+            if (r.ok) resolvedDefaults = await r.json();
+          } catch (e) {
+            console.warn('Could not load defaults:', e.message || e);
+          }
+        }
+
+        async function callAction(action) {
+          const payload = {
+            resourceGroup: resolvedDefaults.resourceGroup,
+            serverName: resolvedDefaults.serverName,
+          };
+          if (!payload.resourceGroup || !payload.serverName) {
+            alert('서버 구성값이 설정되어 있지 않습니다. 관리자에게 AZURE_RESOURCE_GROUP / AZURE_PG_SERVER_NAME 설정을 요청하세요.');
+            return;
+          }
+
+          try {
+            const res = await fetch(`/api/azure-postgres/${action}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              credentials: 'same-origin'
+            });
+            const data = await res.json();
+            console.log(data);
+            alert(JSON.stringify(data));
+          } catch (err) {
+            console.error(err);
+            alert('요청 실패: ' + err.message);
+          }
+        }
+
+        document.getElementById("stopDbBtn").addEventListener("click", async () => {
+          await loadDefaults();
+          await callAction('stop');
+        });
+
+        document.getElementById("startDbBtn").addEventListener("click", async () => {
+          await loadDefaults();
+          await callAction('start');
+        });
+      })();
+    </script>
+
+    
+
+
+
+  <!-- SweetAlert2 라이브러리 불러오기 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Popup 함수 불러오기 -->
+  <script src="../js/popup.js"></script>  
+
+  <!-- 공통 Script 불러오기 -->
+  <script src="../js/script.js"></script>  
+  <!-- farms의 CRUD -->
+  <script src="../js/farms-crud.js"></script>
+
+</body>
+</html>
+

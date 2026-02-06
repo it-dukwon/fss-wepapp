@@ -20,6 +20,7 @@ const { attachEntraAuth } = require("./auth/entraAuth");
 const { runPgQuery, closePool } = require("./db/pg");
 const farmsRoutes = require("./routes/farms-routes");
 const boardRoutes = require("./routes/board-routes");
+const azurePgRoutes = require("./routes/azure-postgres-routes");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -135,6 +136,23 @@ app.use("/api", ensureAuth);
 // ------------------------------------------------------------
 // 정적 파일
 // ------------------------------------------------------------
+// Auto-start trigger: run startAzurePostgres once on first incoming request
+app.use((req, res, next) => {
+  if (!global.__dbAutoStarted) {
+    global.__dbAutoStarted = true;
+    (async () => {
+      try {
+        console.log('[AutoDB] background start triggered by first request', req.originalUrl);
+        await startAzurePostgres();
+        console.log('[AutoDB] background start completed');
+      } catch (err) {
+        console.error('[AutoDB] background start failed:', err.response?.data || err.message || err);
+      }
+    })();
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // ------------------------------------------------------------
@@ -142,6 +160,26 @@ app.use(express.static(path.join(__dirname, "public")));
 // ------------------------------------------------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
+
+  
+  console.log("Main page loaded:", req.session?.user?.preferred_username || "No user");
+
+  // Auto-start DB once per server process on first web visit (dev convenience).
+  if (!global.__dbAutoStarted) {
+    global.__dbAutoStarted = true;
+
+    console.log("global.__dbAutoStarted :", global.__dbAutoStarted);
+
+    (async () => {
+      try {
+        console.log('[AutoDB] attempting to start Azure Postgres (background)');
+        await startAzurePostgres();
+        console.log('[AutoDB] start request sent');
+      } catch (err) {
+        console.error('[AutoDB] start failed:', err.response?.data || err.message || err);
+      }
+    })();
+  }
 });
 
 // ------------------------------------------------------------
@@ -267,8 +305,48 @@ async function runDatabricksSQL(token, sql) {
 // ------------------------------------------------------------
 // CRUD 라우터
 // ------------------------------------------------------------
+// Auto-start helper: obtain ARM token and call the management API start action
+async function startAzurePostgres(opts = {}) {
+  const tenant = process.env.AZURE_TENANT_ID;
+  const clientId = process.env.AZURE_CLIENT_ID;
+  const clientSecret = process.env.AZURE_CLIENT_SECRET;
+
+  if (!tenant || !clientId || !clientSecret) {
+    throw new Error('Missing Azure AD creds (AZURE_TENANT_ID/AZURE_CLIENT_ID/AZURE_CLIENT_SECRET)');
+  }
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+  const params = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'https://management.azure.com/.default',
+  });
+
+  const tokenResp = await axios.post(tokenUrl, params.toString(), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  const token = tokenResp.data?.access_token;
+  if (!token) throw new Error('Failed to get ARM token');
+
+  const subscriptionId = opts.subscriptionId || process.env.AZURE_SUBSCRIPTION_ID;
+  const resourceGroup = opts.resourceGroup || process.env.AZURE_RESOURCE_GROUP;
+  const serverName = opts.serverName || process.env.AZURE_PG_SERVER_NAME;
+
+  if (!subscriptionId || !resourceGroup || !serverName) {
+    throw new Error('Missing target .env: AZURE_SUBSCRIPTION_ID/AZURE_RESOURCE_GROUP/AZURE_PG_SERVER_NAME');
+  }
+
+  const apiVersion = process.env.AZURE_MGMT_API_VERSION || '2021-06-01';
+  const url = `https://management.azure.com/subscriptions/${encodeURIComponent(subscriptionId)}/resourceGroups/${encodeURIComponent(resourceGroup)}/providers/Microsoft.DBforPostgreSQL/flexibleServers/${encodeURIComponent(serverName)}/start?api-version=${apiVersion}`;
+
+  return axios.post(url, {}, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' } });
+}
+
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
 app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
+app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
 
 
 // ------------------------------------------------------------
