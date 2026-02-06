@@ -348,6 +348,38 @@ app.use("/api/farms", farmsRoutes({ runPgQuery }));
 app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
 
+// Switch account: destroy session and return login redirect URL
+app.post("/api/switch-account", ensureAuth, (req, res) => {
+  console.log('[SwitchAccount] POST called by', req.session?.user?.preferred_username || 'unknown');
+  const sid = req.sessionID;
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('[SwitchAccount] destroy error:', err);
+      return res.status(500).json({ error: 'Failed to destroy session' });
+    }
+    try { res.clearCookie('connect.sid'); } catch (e) {}
+    console.log('[SwitchAccount] session destroyed', sid);
+    res.json({ redirect: "/auth/login" });
+  });
+});
+
+// Public shortcut to switch account: clear session and redirect to Entra login
+app.get('/switch-account', (req, res) => {
+  console.log('[SwitchAccount] GET called, user:', req.session?.user?.preferred_username || 'unknown');
+  const sid = req.sessionID;
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('[SwitchAccount] destroy error:', err);
+      // still redirect to login to allow user to re-authenticate
+      return res.redirect('/auth/login');
+    }
+    try { res.clearCookie('connect.sid'); } catch (e) {}
+    console.log('[SwitchAccount] session destroyed (GET)', sid);
+    // Redirect to Entra login with account chooser
+    res.redirect('/auth/login?prompt=select_account');
+  });
+});
+
 
 // ------------------------------------------------------------
 // Databricks SQL 테스트용

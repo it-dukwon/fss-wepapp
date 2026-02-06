@@ -93,13 +93,18 @@ function attachEntraAuth(app) {
 
       req.session.entra = { state, verifier };
 
-      const url = await msalClient.getAuthCodeUrl({
+      // Allow prompt override (eg. prompt=select_account) so callers can force account chooser
+      const prompt = req.query?.prompt;
+      const authRequest = {
         scopes: ["openid", "profile", "email"],
         redirectUri: ENTRA_REDIRECT_URI,
         state,
         codeChallenge: challenge,
         codeChallengeMethod: "S256",
-      });
+      };
+      if (prompt) authRequest.prompt = prompt;
+
+      const url = await msalClient.getAuthCodeUrl(authRequest);
 
       return res.redirect(url);
     } catch (err) {
