@@ -368,26 +368,35 @@ app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
 });
 
 async function getDatabricksDashboardToken() {
-  // Databricks 워크스페이스 OIDC 엔드포인트로 JWT 발급
-  // 이 토큰은 aibi-client가 요구하는 header.payload.signature 형식
-  const instanceUrl = "https://adb-3997551919284009.9.azuredatabricks.net";
-  const tokenEndpoint = `${instanceUrl}/oidc/v1/token`;
+  const instanceUrl  = "https://adb-3997551919284009.9.azuredatabricks.net";
+  const dashboardId  = "01f0bba8df9b1c0ebcf5dc38714d79aa";
 
-  const response = await axios.post(
-    tokenEndpoint,
+  // Step 1: 서비스 프린시펄 OIDC 토큰 발급
+  const oidcResp = await axios.post(
+    `${instanceUrl}/oidc/v1/token`,
     new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: process.env.DATABRICKS_CLIENT_ID,
+      grant_type:    "client_credentials",
+      client_id:     process.env.DATABRICKS_CLIENT_ID,
       client_secret: process.env.DATABRICKS_CLIENT_SECRET,
-      scope: "all-apis",
+      scope:         "all-apis",
     }),
     { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
   );
+  const spToken = oidcResp.data?.access_token;
+  if (!spToken) throw new Error("No access_token in OIDC response");
 
-  if (!response.data?.access_token) {
-    throw new Error("No access_token in OIDC response");
+  // Step 2: Lakeview API로 대시보드 스코프 임베드 크레덴셜 발급
+  const credResp = await axios.post(
+    `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/published/credentials`,
+    {},
+    { headers: { Authorization: `Bearer ${spToken}` } }
+  );
+  const embedToken = credResp.data?.token;
+  if (!embedToken) {
+    console.error("[Dashboard token] Lakeview 응답:", JSON.stringify(credResp.data));
+    throw new Error("No embed token in Lakeview credentials response");
   }
-  return response.data.access_token;
+  return embedToken;
 }
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
