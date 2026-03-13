@@ -86,6 +86,7 @@ async function loadStatus() {
       <td>${fmt(totS)}</td>
       <td class="num-big">${fmt(totCur)}</td>
     `;
+    window.initTableSort?.();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">${err.message}</td></tr>`;
   }
@@ -174,6 +175,7 @@ async function loadEvents() {
         <td><button class="ls-btn ls-btn-red" style="padding:3px 8px;" onclick="deleteEvent(${e.event_id})">삭제</button></td>
       </tr>
     `).join("");
+    window.initTableSort?.();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">${err.message}</td></tr>`;
   }
@@ -228,6 +230,7 @@ async function loadMortality() {
         <td class="${statusClass}">${statusLabel}</td>
       </tr>`;
     }).join("");
+    window.initTableSort?.();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">${err.message}</td></tr>`;
   }

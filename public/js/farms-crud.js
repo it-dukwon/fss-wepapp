@@ -105,6 +105,7 @@ async function loadFarms() {
     }
     tbody.innerHTML = '';
     farms.forEach(f => appendFarmRow(f, tbody));
+    window.initTableSort?.();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="11" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
@@ -337,6 +338,7 @@ async function loadCompanies() {
     btnD.onclick = () => deleteEntity(CO_API, c.id, loadCompanies, '사료회사');
     tdD.appendChild(btnD);
   });
+  window.initTableSort?.();
 }
 
 async function saveCompany(tr) {
@@ -418,6 +420,7 @@ async function loadManagers() {
     btnD.onclick = () => deleteEntity(MG_API, m.id, loadManagers, '관리자');
     tdD.appendChild(btnD);
   });
+  window.initTableSort?.();
 }
 
 function enterManagerEdit(tr, m) {
@@ -570,6 +573,7 @@ function enterSimpleEdit(tr, tdE, tdD, saveFn) {
 // 뱃지 관리 (livestock_batches API 사용)
 // ═══════════════════════════════════════════════════════════
 const BATCH_API = '/api/livestock';
+let _batchMap = {}; // batch_id → batch object
 
 function fmtDate2(d) {
   if (!d) return '-';
@@ -608,6 +612,10 @@ async function loadBadges() {
     const active    = (batches || []).filter(b => b.status === 'active');
     const completed = (batches || []).filter(b => b.status === 'completed');
 
+    // batch_id → batch 맵 (editBadge 에서 참조)
+    _batchMap = {};
+    (batches || []).forEach(b => { _batchMap[b.batch_id] = b; });
+
     // farm_id → 농장명 맵 (이미 _farms 캐시 활용)
     const farmMap = {};
     (await fetch(FARM_API, { credentials: 'include' }).then(r => r.json()).then(d => d.farms || []))
@@ -624,7 +632,10 @@ async function loadBadges() {
           <td>${fmt(b.prev_month_count)}</td>
           <td class="num-big">${fmt(b.current_count)}</td>
           <td><span class="badge-active">활성</span></td>
-          <td><button class="ls-btn ls-btn-gray" onclick="setBadgeStatus(${b.batch_id},'completed')">완료처리</button></td>
+          <td style="white-space:nowrap;">
+            <button class="ls-btn ls-btn-teal" style="margin-right:4px;" onclick="editBadge(${b.batch_id})"><i class="fa-solid fa-pen"></i></button>
+            <button class="ls-btn ls-btn-gray" onclick="setBadgeStatus(${b.batch_id},'completed')">완료처리</button>
+          </td>
         </tr>`).join('')
       : '<tr><td colspan="10" class="ls-empty">없음</td></tr>';
 
@@ -641,6 +652,7 @@ async function loadBadges() {
         </tr>`).join('')
       : '<tr><td colspan="8" class="ls-empty">없음</td></tr>';
 
+    window.initTableSort?.();
   } catch (err) {
     activeTbody.innerHTML = `<tr><td colspan="10" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
@@ -679,6 +691,75 @@ async function addBadge() {
     Swal.fire({ icon: 'success', title: '뱃지 등록 완료', timer: 1200, showConfirmButton: false });
   } catch (err) {
     Swal.fire({ icon: 'error', title: '등록 실패', text: err.message });
+  }
+}
+
+async function editBadge(batch_id) {
+  const b = _batchMap[batch_id];
+  if (!b) return;
+
+  const { value: formValues } = await Swal.fire({
+    title: '뱃지 수정',
+    html: `
+      <div style="text-align:left;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;">
+        <div>
+          <label style="font-size:0.82rem;color:#555;">뱃지명</label>
+          <input id="swal-badge-name" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.badge_name || ''}">
+        </div>
+        <div>
+          <label style="font-size:0.82rem;color:#555;">관리자</label>
+          <input id="swal-manager" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.manager || ''}">
+        </div>
+        <div>
+          <label style="font-size:0.82rem;color:#555;">입식일자</label>
+          <input id="swal-stock-date" type="date" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.stock_in_date ? String(b.stock_in_date).slice(0,10) : ''}">
+        </div>
+        <div>
+          <label style="font-size:0.82rem;color:#555;">입식두수</label>
+          <input id="swal-stock-count" type="number" min="0" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.stock_in_count ?? 0}">
+        </div>
+        <div>
+          <label style="font-size:0.82rem;color:#555;">전월이월두수</label>
+          <input id="swal-prev-count" type="number" min="0" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.prev_month_count ?? 0}">
+        </div>
+        <div>
+          <label style="font-size:0.82rem;color:#555;">메모</label>
+          <input id="swal-note" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.note || ''}">
+        </div>
+      </div>`,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: '저장',
+    cancelButtonText: '취소',
+    preConfirm: () => ({
+      badge_name:       document.getElementById('swal-badge-name').value.trim(),
+      manager:          document.getElementById('swal-manager').value.trim(),
+      stock_in_date:    document.getElementById('swal-stock-date').value || null,
+      stock_in_count:   parseInt(document.getElementById('swal-stock-count').value) || 0,
+      prev_month_count: parseInt(document.getElementById('swal-prev-count').value) || 0,
+      note:             document.getElementById('swal-note').value.trim() || null,
+      farm_id:          b.farm_id,
+      status:           b.status,
+    }),
+  });
+
+  if (!formValues) return;
+  if (!formValues.badge_name) {
+    Swal.fire({ icon: 'warning', title: '뱃지명을 입력하세요' });
+    return;
+  }
+
+  try {
+    const r = await fetch(`${BATCH_API}/batches/${batch_id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formValues),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadBadges();
+    Swal.fire({ icon: 'success', title: '수정 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '수정 실패', text: err.message });
   }
 }
 

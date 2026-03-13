@@ -64,3 +64,48 @@ OVERRIDING SYSTEM VALUE VALUES
 
 -- 농장ID 시퀀스 리셋 (GENERATED ALWAYS identity)
 SELECT setval(pg_get_serial_sequence('list_farms', '농장ID'), 17);
+
+
+-- ── 5. 뱃지 (livestock_batches) ──────────────────────────────
+-- farm_id: list_farms "농장ID" 참조
+-- 입식두수/날짜는 엑셀 확인 후 별도 업데이트 필요
+INSERT INTO livestock_batches (badge_name, farm_id, manager, status) VALUES
+  -- 카길 / 김기훈
+  ('선지농장',     1,  '김기훈', 'active'),
+  ('덕원농장A',    2,  '김기훈', 'active'),
+  ('덕원농장B',    2,  '김기훈', 'active'),
+  ('이레농장A',    3,  '김기훈', 'active'),
+  ('이레농장B',    3,  '김기훈', 'active'),
+  -- 카길 / 마준언
+  ('금산농장A',    4,  '마준언', 'active'),
+  ('금산농장B',    4,  '마준언', 'active'),
+  -- 카길 / 신현준
+  ('대성농장',     5,  '신현준', 'active'),
+  ('강변축산',     6,  '신현준', 'active'),
+  ('광림축산A',    7,  '신현준', 'active'),
+  ('광림축산B',    7,  '신현준', 'active'),
+  -- TS / 최윤혁
+  ('아린팜스A',    8,  '최윤혁', 'active'),
+  ('아린팜스B',    8,  '최윤혁', 'active'),
+  ('울주아린팜스A',9,  '최윤혁', 'active'),
+  ('울주아린팜스B',9,  '최윤혁', 'active'),
+  ('검단축산A',    10, '최윤혁', 'active'),
+  ('검단축산B',    10, '최윤혁', 'active'),
+  ('검단축산C',    10, '최윤혁', 'active'),
+  ('검단축산D',    10, '최윤혁', 'active'),
+  -- 선진 / 이영운
+  ('진호양돈',     11, '이영운', 'active'),
+  ('거목농장A',    12, '이영운', 'active'),
+  ('거목농장B',    12, '이영운', 'active'),
+  ('거목농장C',    12, '이영운', 'active'),
+  ('거목농장D',    12, '이영운', 'active'),
+  ('희숙농장',     13, '이영운', 'active'),
+  ('서광농장A',    14, '이영운', 'active'),
+  ('서광농장B',    14, '이영운', 'active'),
+  ('이금농장',     15, '이영운', 'active'),
+  ('화제축산A',    16, '이영운', 'active'),
+  -- 팜스코 / 정종원
+  ('대동2농장A',   17, '정종원', 'active'),
+  ('대동2농장B',   17, '정종원', 'active'),
+  ('대동2농장C',   17, '정종원', 'active'),
+  ('대동2농장D',   17, '정종원', 'active');
