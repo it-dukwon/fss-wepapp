@@ -160,6 +160,12 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// aibi-client 라이브러리 브라우저에 서빙
+app.use(
+  "/vendor/aibi-client",
+  express.static(path.join(__dirname, "node_modules/@databricks/aibi-client/dist"))
+);
+
 // ------------------------------------------------------------
 // 메인 페이지
 // ------------------------------------------------------------
@@ -348,6 +354,17 @@ async function startAzurePostgres(opts = {}) {
 
   return axios.post(url, {}, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' } });
 }
+
+// GET /api/dashboard/token — 대시보드 임베드용 Databricks 토큰 발급
+app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
+  try {
+    const token = await getDatabricksToken();
+    res.json({ success: true, token });
+  } catch (err) {
+    console.error("[Dashboard token] 발급 실패:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
 app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));

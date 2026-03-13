@@ -47,9 +47,11 @@ async function loadList() {
 
     const tdTitle = document.createElement("td");
     const a = document.createElement("a");
-    a.className = "notice-link";
     a.href = `/board/${encodeURIComponent(p.id)}`;
     a.textContent = p.title;
+    a.style.cssText = "color:var(--green-main);font-weight:600;text-decoration:none;";
+    a.onmouseover = () => { a.style.textDecoration = "underline"; };
+    a.onmouseout  = () => { a.style.textDecoration = "none"; };
     tdTitle.appendChild(a);
     tr.appendChild(tdTitle);
 

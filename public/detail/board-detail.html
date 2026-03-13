@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>공지사항 상세</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -11,31 +12,41 @@
     <a href="../index.html" class="logo-link" title="메인으로">
       <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
     </a>
-    <h2 class="detail-title">공지사항 상세</h2>
+    <h2 class="detail-title">공지사항</h2>
   </header>
 
-  <article class="notice-detail">
+  <!-- 본문 -->
+  <div class="ls-card">
     <p style="margin:0 0 16px;">
-      <a href="/board" style="color:var(--green-main);font-weight:700;text-decoration:none;">← 목록</a>
+      <a href="/board" style="color:var(--green-main);font-weight:700;text-decoration:none;">
+        <i class="fa-solid fa-arrow-left"></i> 목록
+      </a>
     </p>
+    <h2 id="title" style="font-size:1.25rem;font-weight:700;margin:0 0 8px;color:#111;">...</h2>
+    <div id="meta" style="font-size:0.82rem;color:#888;padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid #e5e7eb;"></div>
+    <div id="body" style="font-size:0.95rem;line-height:1.75;white-space:pre-wrap;color:#222;"></div>
+  </div>
 
-    <h2 id="title" class="notice-detail-title">...</h2>
-    <div id="meta" class="notice-detail-meta muted"></div>
-    <div id="body" class="notice-detail-body"></div>
-
-    <details class="notice-admin" data-admin-only style="display:none;margin-top:24px;">
-      <summary>관리자: 수정/삭제</summary>
-      <div class="notice-form">
-        <input id="editTitle" class="notice-input" />
-        <textarea id="editBody" class="notice-textarea"></textarea>
-        <div class="notice-actions">
-          <button class="ls-btn ls-btn-primary" id="btnSave">저장</button>
-          <button class="ls-btn ls-btn-red" id="btnDelete">삭제</button>
-          <span class="muted" id="msg"></span>
-        </div>
+  <!-- 관리자 수정/삭제 -->
+  <div class="ls-card" data-admin-only style="display:none;">
+    <h3 class="ls-section-title">수정 / 삭제</h3>
+    <div class="ls-form-grid" style="grid-template-columns:1fr;">
+      <div class="ls-form-group">
+        <label>제목</label>
+        <input type="text" id="editTitle" />
       </div>
-    </details>
-  </article>
+      <div class="ls-form-group">
+        <label>내용</label>
+        <textarea id="editBody" rows="8"
+          style="width:100%;box-sizing:border-box;resize:vertical;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;font-family:inherit;line-height:1.6;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;">
+      <span id="msg" style="font-size:0.85rem;color:#555;"></span>
+      <button class="ls-btn ls-btn-primary" id="btnSave"><i class="fa-solid fa-floppy-disk"></i> 저장</button>
+      <button class="ls-btn ls-btn-red" id="btnDelete"><i class="fa-solid fa-trash"></i> 삭제</button>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="/js/board-detail.js"></script>

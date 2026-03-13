@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>공지사항</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -14,32 +15,36 @@
     <h2 class="detail-title">공지사항</h2>
   </header>
 
-    
-    <!-- public/detail/board.html 일부 교체 -->
-  <div class="notice-wrap">
-
-    <div class="notice-head">
-      <h3 class="notice-title">공지사항</h3>
-      <div id="meBox" class="notice-login muted"></div>
-    </div>
-
-    <!-- 관리자 등록: 접어두고 admin만 보이게 -->
-    <details class="notice-admin" data-admin-only style="display:none;">
-      <summary>공지 등록</summary>
-
-      <div class="notice-form">
-        <input id="newTitle" class="notice-input" placeholder="제목" />
-        <textarea id="newBody" class="notice-textarea" placeholder="내용"></textarea>
-
-        <div class="notice-actions">
-          <button class="ls-btn ls-btn-primary" id="btnCreate">등록</button>
-          <span id="createMsg" class="muted"></span>
-        </div>
+  <!-- 관리자 글쓰기 폼 -->
+  <div class="ls-card" id="adminFormCard" data-admin-only style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 class="ls-section-title" style="margin:0;">공지 등록</h3>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="createMsg" style="font-size:0.85rem;color:#555;"></span>
+        <button class="ls-btn ls-btn-primary" id="btnCreate"><i class="fa-solid fa-plus"></i> 등록</button>
       </div>
-    </details>
+    </div>
+    <div class="ls-form-grid" style="grid-template-columns:1fr;">
+      <div class="ls-form-group">
+        <label>제목 *</label>
+        <input type="text" id="newTitle" placeholder="제목을 입력하세요" />
+      </div>
+      <div class="ls-form-group">
+        <label>내용 *</label>
+        <textarea id="newBody" rows="5"
+          style="width:100%;box-sizing:border-box;resize:vertical;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;font-family:inherit;line-height:1.6;"></textarea>
+      </div>
+    </div>
+  </div>
 
-    <div class="notice-table-wrap">
-      <table class="notice-table">
+  <!-- 목록 -->
+  <div class="ls-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 class="ls-section-title" style="margin:0;">공지사항 목록</h3>
+      <span id="meBox" style="font-size:0.82rem;color:#888;"></span>
+    </div>
+    <div class="ls-table-wrap">
+      <table class="ls-table">
         <thead>
           <tr>
             <th class="col-no">번호</th>
@@ -48,13 +53,12 @@
             <th class="col-admin" data-admin-only style="display:none;">관리</th>
           </tr>
         </thead>
-        <tbody id="rows"></tbody>
+        <tbody id="rows">
+          <tr><td colspan="4" class="ls-empty">로딩 중...</td></tr>
+        </tbody>
       </table>
     </div>
-
   </div>
-
-
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="../js/table-sort.js"></script>
