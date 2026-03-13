@@ -2,20 +2,375 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>사육두수 관리</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* ── 탭 ── */
+    .ls-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 16px 20px 0;
+      border-bottom: 2px solid #e0e0e0;
+      background: #fff;
+    }
+    .ls-tab-btn {
+      padding: 8px 20px;
+      border: none;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 0;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+    }
+    .ls-tab-btn:hover { color: #146C43; background: transparent; }
+    .ls-tab-btn.active { color: #146C43; border-bottom-color: #146C43; }
+
+    /* ── 탭 콘텐츠 ── */
+    .ls-tab-content { display: none; padding: 20px; }
+    .ls-tab-content.active { display: block; }
+
+    /* ── 섹션 제목 ── */
+    .ls-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+      color: #184B37;
+    }
+
+    /* ── 카드 ── */
+    .ls-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+
+    /* ── 입력 폼 그리드 ── */
+    .ls-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .ls-form-group { display: flex; flex-direction: column; gap: 4px; }
+    .ls-form-group label { font-size: 0.78rem; font-weight: 600; color: #555; }
+    .ls-form-group input,
+    .ls-form-group select,
+    .ls-form-group textarea {
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      text-align: left;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* ── 테이블 (공통) ── */
+    .ls-table-wrap { overflow-x: auto; }
+    .ls-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: center;
+      background: #fff;
+    }
+    .ls-table th {
+      background: #f0f4f0;
+      font-weight: 700;
+      color: #333;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      white-space: nowrap;
+    }
+    .ls-table td {
+      padding: 7px 10px;
+      border: 1px solid #eee;
+      white-space: nowrap;
+    }
+    .ls-table tbody tr:hover { background: #f9fdf9; }
+
+    /* ── 숫자 강조 ── */
+    .num-big { font-size: 1.05rem; font-weight: 700; color: #146C43; }
+    .num-red { color: #d9534f; font-weight: 600; }
+    .num-orange { color: #e07800; font-weight: 600; }
+
+    /* ── 뱃지 상태 ── */
+    .badge-active  { background:#e6f4ea; color:#146C43; border-radius:6px; padding:2px 8px; font-size:0.78rem; font-weight:700; }
+    .badge-done    { background:#eee;    color:#888;    border-radius:6px; padding:2px 8px; font-size:0.78rem; font-weight:700; }
+
+    /* ── 폐사율 상태 ── */
+    .status-good { color:#146C43; font-weight:700; }
+    .status-warn { color:#e07800; font-weight:700; }
+    .status-bad  { color:#d9534f; font-weight:700; }
+
+    /* ── 빈 상태 메시지 ── */
+    .ls-empty { color: #aaa; padding: 24px; text-align: center; font-size: 0.9rem; }
+
+    /* ── 버튼 모음 ── */
+    .ls-btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .ls-btn { padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+    .ls-btn-primary  { background:#146C43; color:#fff; }
+    .ls-btn-primary:hover  { background:#0f5235; }
+    .ls-btn-blue  { background:#007acc; color:#fff; }
+    .ls-btn-blue:hover  { background:#005fa3; }
+    .ls-btn-yellow { background:#ffc107; color:#111; }
+    .ls-btn-yellow:hover { background:#e0a800; }
+    .ls-btn-teal  { background:#17a2b8; color:#fff; }
+    .ls-btn-teal:hover  { background:#117a8b; }
+    .ls-btn-red   { background:#d9534f; color:#fff; }
+    .ls-btn-red:hover   { background:#c9302c; }
+    .ls-btn-gray  { background:#e0e0e0; color:#333; }
+    .ls-btn-gray:hover  { background:#ccc; }
+
+    /* ── 필터 행 ── */
+    .ls-filter-row {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px;
+    }
+    .ls-filter-row label { font-size: 0.82rem; font-weight: 600; color: #555; }
+    .ls-filter-row input,
+    .ls-filter-row select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.88rem; }
+  </style>
 </head>
 <body>
   <header class="page-header">
     <a href="../index.html" class="logo-link" title="메인으로">
-      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+      <img src="../images/logo_text.png" alt="덕원농장" class="page-logo" />
     </a>
-    <h2 class="detail-title">🐄 사육두수 관리</h2>
+    <h2 class="detail-title">사육두수 관리</h2>
   </header>
 
-  <div class="detail-section">
-    <h2>사육두수 관리</h2>
+  <!-- 탭 네비게이션 -->
+  <div class="ls-tabs">
+    <button class="ls-tab-btn active" data-tab="status">현황</button>
+    <button class="ls-tab-btn" data-tab="events">이벤트 입력</button>
+    <button class="ls-tab-btn" data-tab="batches">뱃지 관리</button>
+    <button class="ls-tab-btn" data-tab="mortality">폐사율 리포트</button>
   </div>
 
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 1: 현황 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-status" class="ls-tab-content active">
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">활성 뱃지별 현재 사육두수</h3>
+        <button class="ls-btn ls-btn-gray" onclick="loadStatus()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+      </div>
+      <div class="ls-table-wrap">
+        <table class="ls-table" id="status-table">
+          <thead>
+            <tr>
+              <th>뱃지명</th>
+              <th>관리자</th>
+              <th>입식일</th>
+              <th>입식두수</th>
+              <th>전입(누계)</th>
+              <th>폐사(누계)</th>
+              <th>도태(누계)</th>
+              <th>출하(누계)</th>
+              <th>현재 사육두수</th>
+            </tr>
+          </thead>
+          <tbody id="status-tbody">
+            <tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+          <tfoot>
+            <tr id="status-tfoot" style="background:#f0f4f0;font-weight:700;"></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 2: 이벤트 입력 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-events" class="ls-tab-content">
+    <div class="ls-card">
+      <h3 class="ls-section-title">일별 변동 입력</h3>
+      <div class="ls-form-grid">
+        <div class="ls-form-group">
+          <label>날짜 *</label>
+          <input type="date" id="ev-date" />
+        </div>
+        <div class="ls-form-group">
+          <label>뱃지 *</label>
+          <select id="ev-batch"></select>
+        </div>
+        <div class="ls-form-group">
+          <label>전입두수</label>
+          <input type="number" id="ev-transfer" min="0" value="0" />
+        </div>
+        <div class="ls-form-group">
+          <label>폐사두수</label>
+          <input type="number" id="ev-deaths" min="0" value="0" />
+        </div>
+        <div class="ls-form-group">
+          <label>도태두수</label>
+          <input type="number" id="ev-culled" min="0" value="0" />
+        </div>
+        <div class="ls-form-group">
+          <label>출하두수</label>
+          <input type="number" id="ev-shipped" min="0" value="0" />
+        </div>
+        <div class="ls-form-group" style="grid-column:span 2;">
+          <label>메모</label>
+          <input type="text" id="ev-note" placeholder="선택 입력" />
+        </div>
+      </div>
+      <div class="ls-btn-row">
+        <button class="ls-btn ls-btn-primary" onclick="submitEvent()">저장</button>
+        <span id="ev-msg" style="font-size:0.85rem;color:#555;"></span>
+      </div>
+    </div>
+
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">이벤트 내역</h3>
+        <div class="ls-filter-row" style="margin:0;">
+          <label>뱃지</label>
+          <select id="ev-filter-batch" onchange="loadEvents()"><option value="">전체</option></select>
+          <label>기간</label>
+          <input type="date" id="ev-filter-from" onchange="loadEvents()" />
+          <span>~</span>
+          <input type="date" id="ev-filter-to" onchange="loadEvents()" />
+        </div>
+      </div>
+      <div class="ls-table-wrap">
+        <table class="ls-table" id="events-table">
+          <thead>
+            <tr>
+              <th>날짜</th><th>뱃지명</th>
+              <th>전입</th><th>폐사</th><th>도태</th><th>출하</th>
+              <th>메모</th><th>삭제</th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody">
+            <tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 3: 뱃지 관리 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-batches" class="ls-tab-content">
+    <!-- 신규 등록 -->
+    <div class="ls-card">
+      <h3 class="ls-section-title">신규 뱃지 등록</h3>
+      <div class="ls-form-grid">
+        <div class="ls-form-group">
+          <label>뱃지명 *</label>
+          <input type="text" id="bt-badge-name" placeholder="예: 선지농장, 이레농장A" />
+        </div>
+        <div class="ls-form-group">
+          <label>관리자</label>
+          <input type="text" id="bt-manager" />
+        </div>
+        <div class="ls-form-group">
+          <label>입식일자</label>
+          <input type="date" id="bt-stock-date" />
+        </div>
+        <div class="ls-form-group">
+          <label>입식두수</label>
+          <input type="number" id="bt-stock-count" min="0" value="0" />
+        </div>
+        <div class="ls-form-group">
+          <label>전월이월두수</label>
+          <input type="number" id="bt-prev-count" min="0" value="0" />
+        </div>
+        <div class="ls-form-group">
+          <label>메모</label>
+          <input type="text" id="bt-note" />
+        </div>
+      </div>
+      <button class="ls-btn ls-btn-primary" onclick="addBatch()">뱃지 등록</button>
+    </div>
+
+    <!-- 활성 뱃지 목록 -->
+    <div class="ls-card">
+      <h3 class="ls-section-title">활성 뱃지</h3>
+      <div class="ls-table-wrap">
+        <table class="ls-table" id="batches-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>뱃지명</th><th>관리자</th>
+              <th>입식일</th><th>입식두수</th><th>전월이월</th>
+              <th>현재두수</th><th>상태</th><th>완료처리</th>
+            </tr>
+          </thead>
+          <tbody id="batches-tbody">
+            <tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 완료 뱃지 목록 -->
+    <div class="ls-card">
+      <h3 class="ls-section-title">완료 뱃지</h3>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>뱃지명</th><th>관리자</th>
+              <th>입식일</th><th>입식두수</th><th>상태</th><th>복원</th>
+            </tr>
+          </thead>
+          <tbody id="completed-tbody">
+            <tr><td colspan="7" class="ls-empty">완료된 뱃지 없음</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 4: 폐사율 리포트 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-mortality" class="ls-tab-content">
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">폐사율 오버뷰 <small style="font-size:0.8rem;color:#888;">(벤치마크: 월 0.5% / 총 2%)</small></h3>
+        <button class="ls-btn ls-btn-gray" onclick="loadMortality()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+      </div>
+      <div class="ls-table-wrap">
+        <table class="ls-table" id="mortality-table">
+          <thead>
+            <tr>
+              <th>뱃지명</th>
+              <th>관리자</th>
+              <th>입식일</th>
+              <th>입식두수</th>
+              <th>경과(월)</th>
+              <th>누적폐사</th>
+              <th>누적폐사율</th>
+              <th>벤치마크</th>
+              <th>평가</th>
+            </tr>
+          </thead>
+          <tbody id="mortality-tbody">
+            <tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.8rem;color:#888;margin:10px 0 0;">
+        ※ 양호: 폐사율 ≤ 벤치마크 &nbsp;|&nbsp; 주의: 벤치마크 초과 ~1.5배 &nbsp;|&nbsp; 불량: 벤치마크 1.5배 초과
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="../js/livestock.js"></script>
 </body>
 </html>

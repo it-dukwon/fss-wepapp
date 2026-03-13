@@ -21,6 +21,7 @@ const { runPgQuery, closePool } = require("./db/pg");
 const farmsRoutes = require("./routes/farms-routes");
 const boardRoutes = require("./routes/board-routes");
 const azurePgRoutes = require("./routes/azure-postgres-routes");
+const livestockRoutes = require("./routes/livestock-routes");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -347,6 +348,7 @@ async function startAzurePostgres(opts = {}) {
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
 app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
+app.use("/api/livestock", livestockRoutes({ runPgQuery }));
 
 // Switch account: destroy session and return login redirect URL
 app.post("/api/switch-account", ensureAuth, (req, res) => {
