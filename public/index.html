@@ -25,25 +25,21 @@
         <nav class="nav">
           <a class="nav-item nav-item--active" href="#">홈</a>
           <a class="nav-item" href="detail/board.html">게시판</a>
-          <a class="nav-item" href="#">setting</a>
-          <!-- 기존 링크 유지해도 되지만, 버튼을 따로 넣었으니 링크는 제거/유지 선택 -->
-          <!-- <a class="nav-item" href="/logout">logout</a> -->
         </nav>
 
         <div class="actions">
-          <div class="search">
+          <!-- 메뉴 검색 -->
+          <div class="search" id="searchBox">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="검색" />
-            <button class="mic" type="button" aria-label="음성검색">
-              <i class="fa-solid fa-microphone"></i>
-            </button>
+            <input type="text" id="menuSearch" placeholder="메뉴 검색" autocomplete="off" />
+            <!-- 검색 결과 드롭다운 -->
+            <ul class="search-dropdown" id="searchDropdown"></ul>
           </div>
 
-          <div class="avatar" title="사용자">
+          <div class="avatar" title="사용자" id="userAvatar">
             <span>🙂</span>
           </div>
 
-          <!-- ✅ 로그아웃 버튼 -->
           <button class="logout-btn" type="button" id="logoutBtn" aria-label="로그아웃">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>로그아웃</span>
@@ -66,30 +62,30 @@
         <!-- Quick cards row -->
         <div class="quick-row">
           <div class="quick-card">
-            <a class="quick-link" href="detail/dashboard.html">
+            <a class="quick-link" href="detail/dashboard.html" data-menu="종합 대시보드">
               <i class="fa-solid fa-chart-line"></i>
               <span>종합 대시보드</span>
             </a>
-            <a class="quick-link" href="detail/upload.html">
+            <a class="quick-link" href="detail/upload.html" data-menu="등판정 업로드">
               <i class="fa-solid fa-file-arrow-up"></i>
               <span>등판정 업로드</span>
             </a>
-            <a class="quick-link" href="detail/livestock.html">
+            <a class="quick-link" href="detail/livestock.html" data-menu="사육두수 관리">
               <i class="fa-solid fa-cow"></i>
               <span>사육두수 관리</span>
             </a>
           </div>
 
           <div class="quick-card">
-            <a class="quick-link" href="detail/farms.html">
+            <a class="quick-link" href="detail/farms.html" data-menu="농장 관리">
               <i class="fa-solid fa-house"></i>
               <span>농장 관리</span>
             </a>
-            <a class="quick-link" href="detail/board.html">
+            <a class="quick-link" href="detail/board.html" data-menu="게시판 공지사항">
               <i class="fa-solid fa-clipboard"></i>
               <span>게시판</span>
             </a>
-            <a class="quick-link" href="detail/DATABASE.html">
+            <a class="quick-link" href="detail/database.html" data-menu="DB 관리 데이터베이스">
               <i class="fa-solid fa-database"></i>
               <span>DB관리</span>
             </a>
@@ -98,45 +94,26 @@
 
         <!-- Icon grid -->
         <div class="icon-grid">
-          <a class="grid-item" href="#">
+          <a class="grid-item" href="#" data-menu="직원 관리">
             <i class="fa-solid fa-person"></i><span>직원 관리</span>
           </a>
-          <a class="grid-item" href="#">
+          <a class="grid-item" href="#" data-menu="출하 관리">
             <i class="fa-solid fa-truck"></i><span>출하 관리</span>
           </a>
-          <a class="grid-item" href="#">
+          <a class="grid-item" href="#" data-menu="일정 관리">
             <i class="fa-solid fa-calendar"></i><span>일정 관리</span>
           </a>
-
-          <!-- ✅ 게시판 링크 하나 더(원하면 유지) -->
-          <a class="grid-item" href="detail/board.html">
-            <i class="fa-solid fa-clipboard"></i><span>게시판</span>
+          <a class="grid-item grid-item--muted" href="#" data-menu="이메일">
+            <i class="fa-solid fa-envelope"></i><span>이메일</span>
           </a>
-
-          <a class="grid-item" href="#">
-            <i class="fa-solid fa-envelope"></i><span>이메일 아이콘</span>
+          <a class="grid-item grid-item--muted" href="#" data-menu="문서 관리">
+            <i class="fa-solid fa-folder-open"></i><span>문서 관리</span>
           </a>
-          <a class="grid-item" href="#">
-            <i class="fa-solid fa-folder-open"></i><span>폴더 아이콘</span>
+          <a class="grid-item grid-item--muted" href="#" data-menu="구매 관리">
+            <i class="fa-solid fa-cart-shopping"></i><span>구매 관리</span>
           </a>
-          <a class="grid-item" href="#">
-            <i class="fa-solid fa-trash"></i><span>쓰레기통 아이콘</span>
-          </a>
-
-          <a class="grid-item grid-item--muted" href="#">
-            <i class="fa-solid fa-cart-shopping"></i><span>쇼핑카트 아이콘</span>
-          </a>
-          <a class="grid-item grid-item--muted" href="#">
-            <i class="fa-solid fa-user"></i><span>유저 아이콘</span>
-          </a>
-          <a class="grid-item grid-item--muted" href="#">
-            <i class="fa-solid fa-folder"></i><span>폴더 아이콘</span>
-          </a>
-          <a class="grid-item grid-item--muted" href="#">
-            <i class="fa-solid fa-folder"></i><span>폴더 아이콘</span>
-          </a>
-          <a class="grid-item grid-item--muted" href="#">
-            <i class="fa-solid fa-user"></i><span>유저 아이콘</span>
+          <a class="grid-item grid-item--muted" href="#" data-menu="계정 관리">
+            <i class="fa-solid fa-user"></i><span>계정 관리</span>
           </a>
         </div>
       </section>
@@ -144,9 +121,78 @@
   </div>
 
   <script>
+    // 로그아웃
     document.getElementById("logoutBtn")?.addEventListener("click", () => {
       window.location.href = "/logout";
     });
+
+    // 로그인 사용자 이름 표시
+    fetch("/api/me", { credentials: "same-origin" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.user?.name) {
+          const avatar = document.getElementById("userAvatar");
+          if (avatar) avatar.title = data.user.name;
+        }
+      })
+      .catch(() => {});
+
+    // 메뉴 검색
+    (function () {
+      const input = document.getElementById("menuSearch");
+      const dropdown = document.getElementById("searchDropdown");
+
+      // 검색 대상: data-menu 속성 가진 모든 링크
+      const allMenuItems = () =>
+        [...document.querySelectorAll("[data-menu]")].map(el => ({
+          el,
+          label: el.querySelector("span")?.textContent?.trim() || "",
+          keywords: (el.dataset.menu || "").toLowerCase(),
+          href: el.getAttribute("href") || "#",
+        }));
+
+      function renderDropdown(query) {
+        dropdown.innerHTML = "";
+        if (!query) { dropdown.classList.remove("open"); return; }
+
+        const q = query.toLowerCase();
+        const matches = allMenuItems().filter(item =>
+          item.label.includes(query) || item.keywords.includes(q)
+        );
+
+        if (matches.length === 0) {
+          const li = document.createElement("li");
+          li.className = "search-dropdown-empty";
+          li.textContent = "검색 결과 없음";
+          dropdown.appendChild(li);
+        } else {
+          matches.forEach(item => {
+            const li = document.createElement("li");
+            li.innerHTML = `<i class="${item.el.querySelector("i")?.className || "fa-solid fa-link"}"></i> ${item.label}`;
+            li.addEventListener("mousedown", () => {
+              if (item.href && item.href !== "#") window.location.href = item.href;
+              else item.el.scrollIntoView({ behavior: "smooth", block: "center" });
+              input.value = "";
+              dropdown.classList.remove("open");
+            });
+            dropdown.appendChild(li);
+          });
+        }
+        dropdown.classList.add("open");
+      }
+
+      input.addEventListener("input", () => renderDropdown(input.value.trim()));
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Escape") { input.value = ""; dropdown.classList.remove("open"); }
+      });
+
+      document.addEventListener("click", e => {
+        if (!document.getElementById("searchBox").contains(e.target)) {
+          dropdown.classList.remove("open");
+        }
+      });
+    })();
   </script>
 </body>
 </html>
