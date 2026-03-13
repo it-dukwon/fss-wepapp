@@ -41,7 +41,7 @@ function buildMortalityReportHtml(report, generatedAt) {
       <tr>
         <td style="font-weight:700;">${r.badge_name}</td>
         <td>${r.manager || "-"}</td>
-        <td>${r.stock_in_date ? String(r.stock_in_date).slice(0, 10) : "-"}</td>
+        <td>${r.stock_in_date ? String(r.stock_in_date).slice(0, 10).replace(/-/g, ".") : "-"}</td>
         <td>${r.stock_in_count ?? "-"}</td>
         <td>${r.months_elapsed ?? "-"}</td>
         <td style="color:#d9534f;font-weight:600;">${r.total_deaths ?? 0}</td>

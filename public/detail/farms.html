@@ -21,13 +21,13 @@
     <button class="ls-tab-btn" data-tab="managers">관리자</button>
   </div>
 
-  <!-- ══════════════════════════════════════ -->
   <!-- 탭 1: 농장 -->
-  <!-- ══════════════════════════════════════ -->
   <div id="tab-farms" class="ls-tab-content active">
-
     <div class="ls-card">
-      <h3 class="ls-section-title">신규 농장 등록</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">신규 농장 등록</h3>
+        <button class="ls-btn ls-btn-primary" onclick="addFarm()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
       <div class="ls-form-grid">
         <div class="ls-form-group">
           <label>농장명 *</label>
@@ -62,9 +62,6 @@
           <input type="date" id="fn-end" />
         </div>
       </div>
-      <div class="ls-btn-row">
-        <button class="ls-btn ls-btn-primary" onclick="addFarm()"><i class="fa-solid fa-plus"></i> 등록</button>
-      </div>
     </div>
 
     <div class="ls-card">
@@ -89,12 +86,13 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════ -->
   <!-- 탭 2: 사료회사 -->
-  <!-- ══════════════════════════════════════ -->
   <div id="tab-companies" class="ls-tab-content">
     <div class="ls-card">
-      <h3 class="ls-section-title">사료회사 등록</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">사료회사 등록</h3>
+        <button class="ls-btn ls-btn-primary" onclick="addCompany()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
       <div class="ls-form-grid" style="max-width:600px;">
         <div class="ls-form-group">
           <label>회사명 *</label>
@@ -104,9 +102,6 @@
           <label>메모</label>
           <input type="text" id="co-note" />
         </div>
-      </div>
-      <div class="ls-btn-row">
-        <button class="ls-btn ls-btn-primary" onclick="addCompany()"><i class="fa-solid fa-plus"></i> 등록</button>
       </div>
     </div>
 
@@ -125,13 +120,14 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════ -->
   <!-- 탭 3: 관리자 -->
-  <!-- ══════════════════════════════════════ -->
   <div id="tab-managers" class="ls-tab-content">
     <div class="ls-card">
-      <h3 class="ls-section-title">관리자 등록</h3>
-      <div class="ls-form-grid" style="max-width:700px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">관리자 등록</h3>
+        <button class="ls-btn ls-btn-primary" onclick="addManager()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
+      <div class="ls-form-grid" style="grid-template-columns:repeat(4,1fr);">
         <div class="ls-form-group">
           <label>이름 *</label>
           <input type="text" id="mg-name" placeholder="관리자 이름" />
@@ -148,9 +144,6 @@
           <label>메모</label>
           <input type="text" id="mg-note" />
         </div>
-      </div>
-      <div class="ls-btn-row">
-        <button class="ls-btn ls-btn-primary" onclick="addManager()"><i class="fa-solid fa-plus"></i> 등록</button>
       </div>
     </div>
 

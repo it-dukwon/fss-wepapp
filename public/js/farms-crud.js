@@ -56,21 +56,34 @@ async function loadCompanySelects() {
 }
 
 async function loadManagerSelect() {
-  const r = await fetch(MG_API, { credentials: 'include' });
-  const d = await r.json();
-  _managers = d.data || [];
+  if (!_managers.length) {
+    const r = await fetch(MG_API, { credentials: 'include' });
+    const d = await r.json();
+    _managers = d.data || [];
+  }
+  filterManagerSelect();
+}
 
+function filterManagerSelect() {
   const sel = get('fn-manager');
   if (!sel) return;
+  const selectedCompanyId = get('fn-company')?.value || '';
   const prev = sel.value;
+
   sel.innerHTML = '<option value="">-- 선택 안 함 --</option>';
-  _managers.forEach(m => {
+  const filtered = selectedCompanyId
+    ? _managers.filter(m => String(m.feed_company_id) === selectedCompanyId)
+    : _managers;
+
+  filtered.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.id;
     opt.textContent = m.manager_name + (m.company_name ? ` (${m.company_name})` : '');
     sel.appendChild(opt);
   });
-  if (prev) sel.value = prev;
+
+  // 이전 선택값이 필터 결과에 있으면 유지, 없으면 초기화
+  if (prev && filtered.some(m => String(m.id) === prev)) sel.value = prev;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -557,5 +570,9 @@ function enterSimpleEdit(tr, tdE, tdD, saveFn) {
 window.addEventListener('DOMContentLoaded', async () => {
   await loadCompanySelects();
   await loadManagerSelect();
+
+  // 사료회사 선택 시 관리자 목록 필터링
+  get('fn-company')?.addEventListener('change', filterManagerSelect);
+
   await loadFarms();
 });
