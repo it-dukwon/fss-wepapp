@@ -99,6 +99,22 @@ CREATE TABLE IF NOT EXISTS public.livestock_batches (
 
 
 -- ────────────────────────────────────────
+-- 4-2. 이메일 수신자 (email_recipients)
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.email_recipients (
+  id          SERIAL PRIMARY KEY,
+  email       VARCHAR(255) NOT NULL,
+  name        VARCHAR(100),
+  alert_type  VARCHAR(50)  NOT NULL DEFAULT 'mortality_report',
+  enabled     BOOLEAN      NOT NULL DEFAULT true,
+  note        TEXT,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_recipients_alert_type ON email_recipients(alert_type);
+
+
+-- ────────────────────────────────────────
 -- 5. 사육두수 - 일별 이벤트 (livestock_events)
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.livestock_events (

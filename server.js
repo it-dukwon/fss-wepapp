@@ -25,7 +25,7 @@ const livestockRoutes = require("./routes/livestock-routes");
 const emailRoutes = require("./routes/email-routes");
 const cron = require("node-cron");
 const { sendMail, buildMortalityReportHtml } = require("./utils/mailer");
-const { fetchMortalityReport } = require("./routes/email-routes");
+const { fetchMortalityReport, getEnabledRecipients } = require("./routes/email-routes");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -482,8 +482,12 @@ async function reloadEmailCron() {
 
     _emailCronJob = cron.schedule(cronExpr, async () => {
       console.log("[Cron] 폐사율 리포트 자동 발송 시작");
-      const to = process.env.EMAIL_RECIPIENTS;
-      if (!to) { console.warn("[Cron] EMAIL_RECIPIENTS 미설정, 발송 생략"); return; }
+      // DB 수신자 목록 우선, 없으면 .env 폴백
+      const dbRecipients = await getEnabledRecipients(runPgQuery, "mortality_report");
+      const to = dbRecipients.length > 0
+        ? dbRecipients.join(",")
+        : (process.env.EMAIL_RECIPIENTS || null);
+      if (!to) { console.warn("[Cron] 수신자 없음, 발송 생략"); return; }
       try {
         const report = await fetchMortalityReport(runPgQuery);
         const generatedAt = dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm (KST)");

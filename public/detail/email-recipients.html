@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>이메일 수신대상 관리</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">이메일 수신대상 관리</h2>
+  </header>
+
+  <!-- 탭 네비게이션 -->
+  <div class="ls-tabs">
+    <button class="ls-tab-btn active" data-tab="mortality_report">폐사율 리포트</button>
+  </div>
+
+  <!-- 탭: 폐사율 리포트 수신자 -->
+  <div id="tab-mortality_report" class="ls-tab-content active">
+
+    <!-- 신규 등록 -->
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">수신자 등록</h3>
+        <button class="ls-btn ls-btn-primary" onclick="addRecipient('mortality_report')">
+          <i class="fa-solid fa-plus"></i> 등록
+        </button>
+      </div>
+      <div class="ls-form-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="ls-form-group">
+          <label>이름</label>
+          <input type="text" id="rc-name" placeholder="수신자 이름" />
+        </div>
+        <div class="ls-form-group">
+          <label>이메일 *</label>
+          <input type="email" id="rc-email" placeholder="example@email.com" />
+        </div>
+        <div class="ls-form-group">
+          <label>활성화</label>
+          <select id="rc-enabled">
+            <option value="true">활성화</option>
+            <option value="false">비활성화</option>
+          </select>
+        </div>
+        <div class="ls-form-group">
+          <label>메모</label>
+          <input type="text" id="rc-note" placeholder="선택 입력" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 수신자 목록 -->
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">수신자 목록</h3>
+        <button class="ls-btn ls-btn-gray" onclick="loadRecipients('mortality_report')">
+          <i class="fa-solid fa-rotate-right"></i> 새로고침
+        </button>
+      </div>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>이름</th><th>이메일</th><th>알람유형</th>
+              <th>활성화</th><th>메모</th><th>등록일</th><th>수정</th><th>삭제</th>
+            </tr>
+          </thead>
+          <tbody id="recipients-tbody">
+            <tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.82rem;color:#888;margin:10px 0 0;">
+        ※ 활성화된 수신자에게만 이메일이 발송됩니다. 수신자가 없으면 서버 환경변수(EMAIL_RECIPIENTS) 값으로 발송됩니다.
+      </p>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="../js/table-sort.js"></script>
+  <script src="../js/email-recipients.js"></script>
+</body>
+</html>
