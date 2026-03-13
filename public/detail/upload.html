@@ -4,31 +4,39 @@
   <meta charset="UTF-8" />
   <title>일자별 등판정 파일 업로드</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
   <header class="page-header">
     <a href="../index.html" class="logo-link" title="메인으로">
       <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
     </a>
-    <h2 class="detail-title">📁 일자별 등판정 XLS 파일 업로드</h2>
+    <h2 class="detail-title">일자별 등판정 XLS 파일 업로드</h2>
   </header>
-  
-  <div class="detail-section">
-    <h2>일자별 등판정 XLS 파일 업로드</h2>
+
+  <div class="ls-card">
+    <h3 class="ls-section-title">XLS 파일 업로드</h3>
     <form id="uploadForm" enctype="multipart/form-data">
-      <input type="file" name="xlsFile" accept=".xls,.xlsx" required />
-      <button type="submit">업로드</button>
-      <p id="status"></p>
+      <div class="ls-form-group" style="max-width:400px;">
+        <label>파일 선택</label>
+        <input type="file" name="xlsFile" accept=".xls,.xlsx" required />
+      </div>
+      <div class="ls-btn-row">
+        <button type="submit" class="ls-btn ls-btn-primary"><i class="fa-solid fa-upload"></i> 업로드</button>
+        <span id="status" style="font-size:0.85rem;color:#555;"></span>
+      </div>
     </form>
   </div>
 
   <script>
     document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const statusEl = document.getElementById("status");
+      statusEl.textContent = '업로드 중...';
       const formData = new FormData(e.target);
       const res = await fetch("/upload", { method: "POST", body: formData });
       const result = await res.json();
-      document.getElementById("status").textContent = result.message;
+      statusEl.textContent = result.message;
     });
   </script>
 </body>

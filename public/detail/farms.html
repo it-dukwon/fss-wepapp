@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>농장 관리</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
   <header class="page-header">
@@ -13,52 +14,46 @@
     <h2 class="detail-title">농장 관리</h2>
   </header>
 
-  <div class="detail-section">
-    <h2>농장 관리</h2>
-    <table id="farm-table" style="width: 100%; border-collapse: collapse; margin-bottom: 1em;">
-      <thead>
-        <tr>
-          <th>농장ID</th><th>농장명</th>
-          <th>지역</th><th>뱃지</th>
-          <th>농장주ID</th><th>농장주</th>
-          <th>사료회사</th>
-          <th>관리자ID</th><th>관리자</th>
-          <th>계약상태</th><th>계약시작일</th><th>계약종료일</th>
-          <th>수정</th><th>삭제</th>
-        </tr>
-      </thead>
-      <tbody id="farm-tbody"></tbody>
-      <tfoot>
-        <tr id="new-farm-row">
-          <td>자동생성</td>
-          <td><input type="text" id="new-농장명" /></td>
-          <td><input type="text" id="new-지역" /></td>
-          <td><input type="text" id="new-뱃지" /></td>
-          <td><input type="number" id="new-농장주ID" /></td>
-          <td><input type="text" id="new-농장주" /></td>
-          <td><input type="text" id="new-사료회사" /></td>
-          <td><input type="number" id="new-관리자ID" /></td>
-          <td><input type="text" id="new-관리자" /></td>
-          <td><input type="text" id="new-계약상태" /></td>
-          <td><input type="date" id="new-계약시작일" /></td>
-          <td><input type="date" id="new-계약종료일" /></td>
-          <td colspan="2"><button class="add-btn">추가</button></td>
-        </tr>
-      </tfoot>
-    </table>
-
+  <div class="ls-card">
+    <h3 class="ls-section-title">농장 목록</h3>
+    <div class="ls-table-wrap">
+      <table class="ls-table" id="farm-table">
+        <thead>
+          <tr>
+            <th>농장ID</th><th>농장명</th>
+            <th>지역</th><th>뱃지</th>
+            <th>농장주ID</th><th>농장주</th>
+            <th>사료회사</th>
+            <th>관리자ID</th><th>관리자</th>
+            <th>계약상태</th><th>계약시작일</th><th>계약종료일</th>
+            <th>수정</th><th>삭제</th>
+          </tr>
+        </thead>
+        <tbody id="farm-tbody"></tbody>
+        <tfoot>
+          <tr id="new-farm-row">
+            <td>자동생성</td>
+            <td><input type="text" id="new-농장명" /></td>
+            <td><input type="text" id="new-지역" /></td>
+            <td><input type="text" id="new-뱃지" /></td>
+            <td><input type="number" id="new-농장주ID" /></td>
+            <td><input type="text" id="new-농장주" /></td>
+            <td><input type="text" id="new-사료회사" /></td>
+            <td><input type="number" id="new-관리자ID" /></td>
+            <td><input type="text" id="new-관리자" /></td>
+            <td><input type="text" id="new-계약상태" /></td>
+            <td><input type="date" id="new-계약시작일" /></td>
+            <td><input type="date" id="new-계약종료일" /></td>
+            <td colspan="2"><button class="ls-btn ls-btn-yellow add-btn">추가</button></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 
-  <!-- SweetAlert2 라이브러리 불러오기 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- Popup 함수 불러오기 -->
-  <script src="../js/popup.js"></script>  
-
-  <!-- 공통 Script 불러오기 -->
-  <script src="../js/script.js"></script>  
-  <!-- farms의 CRUD -->
+  <script src="../js/popup.js"></script>
+  <script src="../js/script.js"></script>
   <script src="../js/farms-crud.js"></script>
-
 </body>
 </html>
-

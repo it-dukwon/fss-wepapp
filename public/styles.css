@@ -197,8 +197,7 @@ input[type="file"] { padding: 4px; }
 
 
 
-/***** 버튼 *****/
-/* 버튼 스타일 (공통) 기본 파란색 */
+/***** 버튼 (구식 - 하위 호환용) *****/
 button {
   padding: 4px 8px;
   background-color: #007acc;
@@ -208,30 +207,13 @@ button {
   cursor: pointer;
   font-size: 0.85rem;
 }
-button:hover {
-  background-color: #005fa3;
-}
-/* 등록 버튼 (노란색 톤 조정) */
-.add-btn {
-  background-color: #ffc107;
-}
-.add-btn:hover {
-  background-color: #e0a800;
-}
-/* 수정 버튼 (청록색) */
-.edit-btn {
-  background-color: #17a2b8;
-}
-.edit-btn:hover {
-  background-color: #117a8b;
-}
-/* 삭제 버튼 (빨간색) */
-.delete-btn {
-  background-color: #d9534f;
-}
-.delete-btn:hover {
-  background-color: #c9302c;
-}
+button:hover { background-color: #005fa3; }
+.add-btn    { background-color: #ffc107; }
+.add-btn:hover  { background-color: #e0a800; }
+.edit-btn   { background-color: #17a2b8; }
+.edit-btn:hover { background-color: #117a8b; }
+.delete-btn { background-color: #d9534f; }
+.delete-btn:hover { background-color: #c9302c; }
 
 
 
@@ -902,6 +884,166 @@ body{
   padding-top: 16px;
   font-size: 14px;
   line-height: 1.7;
-  white-space: pre-wrap; /* 줄바꿈 유지 */
+  white-space: pre-wrap;
   word-break: break-word;
 }
+
+
+/* ============================================================
+   LS Design System (공통 디자인 시스템)
+   - 모든 detail 페이지에서 사용
+   - 접두사 ls- 사용
+============================================================ */
+
+/* ── 페이지 래퍼 ── */
+.ls-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 40px;
+}
+
+/* ── 탭 ── */
+.ls-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 16px 20px 0;
+  border-bottom: 2px solid #e0e0e0;
+  background: #fff;
+}
+.ls-tab-btn {
+  padding: 8px 20px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #555;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 0;
+  margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+}
+.ls-tab-btn:hover { color: #146C43; background: transparent; }
+.ls-tab-btn.active { color: #146C43; border-bottom-color: #146C43; }
+
+/* ── 탭 콘텐츠 ── */
+.ls-tab-content { display: none; padding: 20px; }
+.ls-tab-content.active { display: block; }
+
+/* ── 섹션 제목 ── */
+.ls-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #184B37;
+}
+
+/* ── 카드 ── */
+.ls-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+/* ── 페이지 콘텐츠 영역 (탭 없는 단순 페이지용) ── */
+.ls-content {
+  padding: 20px;
+}
+
+/* ── 입력 폼 그리드 ── */
+.ls-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+.ls-form-group { display: flex; flex-direction: column; gap: 4px; }
+.ls-form-group label { font-size: 0.78rem; font-weight: 600; color: #555; }
+.ls-form-group input,
+.ls-form-group select,
+.ls-form-group textarea {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── 테이블 ── */
+.ls-table-wrap { overflow-x: auto; }
+.ls-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: center;
+  background: #fff;
+}
+.ls-table th {
+  background: #f0f4f0;
+  font-weight: 700;
+  color: #333;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+}
+.ls-table td {
+  padding: 7px 10px;
+  border: 1px solid #eee;
+  white-space: nowrap;
+}
+.ls-table tfoot td {
+  background: #f0f4f0;
+  font-weight: 700;
+}
+.ls-table tbody tr:hover { background: #f9fdf9; }
+.ls-table input[type="text"],
+.ls-table input[type="number"],
+.ls-table input[type="date"] {
+  width: 100%;
+  min-width: 60px;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* ── 상태/숫자 강조 ── */
+.ls-empty    { color: #aaa; padding: 24px; text-align: center; font-size: 0.9rem; }
+.num-big     { font-size: 1.05rem; font-weight: 700; color: #146C43; }
+.num-red     { color: #d9534f; font-weight: 600; }
+.num-orange  { color: #e07800; font-weight: 600; }
+.status-good { color: #146C43; font-weight: 700; }
+.status-warn { color: #e07800; font-weight: 700; }
+.status-bad  { color: #d9534f; font-weight: 700; }
+.badge-active { background:#e6f4ea; color:#146C43; border-radius:6px; padding:2px 8px; font-size:0.78rem; font-weight:700; }
+.badge-done   { background:#eee;    color:#888;    border-radius:6px; padding:2px 8px; font-size:0.78rem; font-weight:700; }
+
+/* ── 버튼 시스템 ── */
+.ls-btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ls-btn { padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background .15s; }
+.ls-btn-primary { background: #146C43; color: #fff; }
+.ls-btn-primary:hover { background: #0f5235; }
+.ls-btn-blue    { background: #007acc; color: #fff; }
+.ls-btn-blue:hover    { background: #005fa3; }
+.ls-btn-yellow  { background: #ffc107; color: #111; }
+.ls-btn-yellow:hover  { background: #e0a800; }
+.ls-btn-teal    { background: #17a2b8; color: #fff; }
+.ls-btn-teal:hover    { background: #117a8b; }
+.ls-btn-red     { background: #d9534f; color: #fff; }
+.ls-btn-red:hover     { background: #c9302c; }
+.ls-btn-gray    { background: #e0e0e0; color: #333; }
+.ls-btn-gray:hover    { background: #ccc; }
+
+/* ── 필터 행 ── */
+.ls-filter-row {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px;
+}
+.ls-filter-row label { font-size: 0.82rem; font-weight: 600; color: #555; }
+.ls-filter-row input,
+.ls-filter-row select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.88rem; }

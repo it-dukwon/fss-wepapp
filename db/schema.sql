@@ -55,7 +55,7 @@ ON CONFLICT (key) DO NOTHING;
 
 
 -- ────────────────────────────────────────
--- 4. 사육두수 - 뱃지
+-- 4. 사육두수 - 뱃지 (livestock_batches)
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.livestock_batches (
   batch_id          INTEGER NOT NULL DEFAULT nextval('livestock_batches_batch_id_seq'::regclass),
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.livestock_batches (
 
 
 -- ────────────────────────────────────────
--- 4. 사육두수 - 일별 이벤트
+-- 5. 사육두수 - 일별 이벤트 (livestock_events)
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.livestock_events (
   event_id    INTEGER NOT NULL DEFAULT nextval('livestock_events_event_id_seq'::regclass),
