@@ -371,19 +371,24 @@ async function getDatabricksDashboardToken() {
   const instanceUrl  = "https://adb-3997551919284009.9.azuredatabricks.net";
   const dashboardId  = "01f0bba8df9b1c0ebcf5dc38714d79aa";
 
-  // Step 1: 서비스 프린시펄 OIDC 토큰 발급
+  // Step 1: Azure AD에서 Databricks 리소스 스코프 토큰 발급
+  // Azure Databricks 리소스 ID: 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d
+  const tenantId = process.env.AZURE_TENANT_ID;
+  if (!tenantId) throw new Error("AZURE_TENANT_ID 환경변수가 없습니다");
+
   const oidcResp = await axios.post(
-    `${instanceUrl}/oidc/v1/token`,
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
     new URLSearchParams({
       grant_type:    "client_credentials",
       client_id:     process.env.DATABRICKS_CLIENT_ID,
       client_secret: process.env.DATABRICKS_CLIENT_SECRET,
-      scope:         "all-apis",
+      scope:         "2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/.default",
     }),
     { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
   );
   const spToken = oidcResp.data?.access_token;
-  if (!spToken) throw new Error("No access_token in OIDC response");
+  if (!spToken) throw new Error("No access_token in Azure AD response");
+  console.log("[Dashboard token] Azure AD 토큰 발급 성공");
 
   // Step 2: Lakeview API로 대시보드 스코프 임베드 크레덴셜 발급
   // 경로 후보를 순서대로 시도
