@@ -355,16 +355,40 @@ async function startAzurePostgres(opts = {}) {
   return axios.post(url, {}, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' } });
 }
 
-// GET /api/dashboard/token — 대시보드 임베드용 Databricks 토큰 발급
+// GET /api/dashboard/token — 대시보드 임베드용 Databricks OIDC 토큰 발급
+// aibi-client는 Databricks 워크스페이스 OIDC JWT가 필요 (Azure mgmt 토큰 아님)
 app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
   try {
-    const token = await getDatabricksToken();
+    const token = await getDatabricksDashboardToken();
     res.json({ success: true, token });
   } catch (err) {
     console.error("[Dashboard token] 발급 실패:", err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+async function getDatabricksDashboardToken() {
+  // Databricks 워크스페이스 OIDC 엔드포인트로 JWT 발급
+  // 이 토큰은 aibi-client가 요구하는 header.payload.signature 형식
+  const instanceUrl = "https://adb-3997551919284009.9.azuredatabricks.net";
+  const tokenEndpoint = `${instanceUrl}/oidc/v1/token`;
+
+  const response = await axios.post(
+    tokenEndpoint,
+    new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: process.env.DATABRICKS_CLIENT_ID,
+      client_secret: process.env.DATABRICKS_CLIENT_SECRET,
+      scope: "all-apis",
+    }),
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  );
+
+  if (!response.data?.access_token) {
+    throw new Error("No access_token in OIDC response");
+  }
+  return response.data.access_token;
+}
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
 app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
