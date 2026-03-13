@@ -22,6 +22,10 @@ const farmsRoutes = require("./routes/farms-routes");
 const boardRoutes = require("./routes/board-routes");
 const azurePgRoutes = require("./routes/azure-postgres-routes");
 const livestockRoutes = require("./routes/livestock-routes");
+const emailRoutes = require("./routes/email-routes");
+const cron = require("node-cron");
+const { sendMail, buildMortalityReportHtml } = require("./utils/mailer");
+const { fetchMortalityReport } = require("./routes/email-routes");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -349,6 +353,7 @@ app.use("/api/farms", farmsRoutes({ runPgQuery }));
 app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
 app.use("/api/livestock", livestockRoutes({ runPgQuery }));
+app.use("/api/email", emailRoutes({ runPgQuery, ensureAdmin }));
 
 // Switch account: destroy session and return login redirect URL
 app.post("/api/switch-account", ensureAuth, (req, res) => {
@@ -452,9 +457,63 @@ process.on("SIGINT", async () => {
 });
 
 // ------------------------------------------------------------
+// 폐사율 리포트 자동 발송 cron (DB 설정 기반, 동적 재적용 가능)
+// ------------------------------------------------------------
+let _emailCronJob = null;
+
+async function reloadEmailCron() {
+  // 기존 cron 중지
+  if (_emailCronJob) { _emailCronJob.stop(); _emailCronJob = null; }
+
+  try {
+    const result = await runPgQuery(`SELECT value FROM app_settings WHERE key = 'email_mortality_schedule'`);
+    const cfg = result.rows[0]?.value
+      ? JSON.parse(result.rows[0].value)
+      : { enabled: true, dayOfWeek: 1, hour: 9, minute: 0 };
+
+    if (!cfg.enabled) { console.log("[Cron] 이메일 자동발송 비활성화됨"); return; }
+
+    // KST → UTC 변환
+    const utcHour = ((cfg.hour - 9) + 24) % 24;
+    // 자정을 넘기면 요일도 하루 앞당김
+    const dayWrap = cfg.hour < 9 ? 1 : 0;
+    const utcDay = ((cfg.dayOfWeek - dayWrap) + 7) % 7;
+    const cronExpr = `${cfg.minute} ${utcHour} * * ${utcDay}`;
+
+    _emailCronJob = cron.schedule(cronExpr, async () => {
+      console.log("[Cron] 폐사율 리포트 자동 발송 시작");
+      const to = process.env.EMAIL_RECIPIENTS;
+      if (!to) { console.warn("[Cron] EMAIL_RECIPIENTS 미설정, 발송 생략"); return; }
+      try {
+        const report = await fetchMortalityReport(runPgQuery);
+        const generatedAt = dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm (KST)");
+        const html = buildMortalityReportHtml(report, generatedAt);
+        await sendMail({
+          to,
+          subject: `[덕원농장] 주간 폐사율 오버뷰 리포트 ${dayjs().tz("Asia/Seoul").format("YYYY-MM-DD")}`,
+          html,
+        });
+        console.log("[Cron] 발송 완료 →", to);
+      } catch (err) {
+        console.error("[Cron] 발송 실패:", err.message);
+      }
+    });
+
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    console.log(`[Cron] 이메일 스케줄 등록: 매주 ${days[cfg.dayOfWeek]}요일 ${String(cfg.hour).padStart(2,"0")}:${String(cfg.minute).padStart(2,"0")} KST (cron: ${cronExpr})`);
+  } catch (err) {
+    console.error("[Cron] 스케줄 로드 실패:", err.message);
+  }
+}
+
+// 전역 노출 (email-routes에서 재적용 호출용)
+global.reloadEmailCron = reloadEmailCron;
+
+// ------------------------------------------------------------
 // 서버 시작
 // ------------------------------------------------------------
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
+  reloadEmailCron().catch((err) => console.error("[Cron] 초기화 실패:", err.message));
 });
 

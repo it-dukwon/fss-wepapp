@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.notion.so)"
+      "WebFetch(domain:www.notion.so)",
+      "Bash(ls C:/Users/dnftk/OneDrive/문서/DEV/fss-wepapp/.env* 2>/dev/null; cat C:/Users/dnftk/OneDrive/문서/DEV/fss-wepapp/.gitignore 2>/dev/null || echo \"no .gitignore\")"
     ]
   }
 }

@@ -18,7 +18,7 @@ document.querySelectorAll(".ls-tab-btn").forEach((btn) => {
     if (tab === "status")    loadStatus();
     if (tab === "events")    { loadBatchSelect(); loadEvents(); }
     if (tab === "batches")   loadBatches();
-    if (tab === "mortality") loadMortality();
+    if (tab === "mortality") { loadMortality(); loadSchedule(); }
   });
 });
 
@@ -321,6 +321,81 @@ async function loadMortality() {
     }).join("");
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">${err.message}</td></tr>`;
+  }
+}
+
+// ─────────────────────────────────────────
+// 이메일 스케줄 설정
+// ─────────────────────────────────────────
+const EMAIL_API = API.replace("/livestock", "/email");
+
+async function loadSchedule() {
+  try {
+    const res = await fetch(EMAIL_API + "/schedule", { credentials: "include" });
+    const json = await res.json();
+    if (!json.success) return;
+    const s = json.schedule;
+    document.getElementById("sch-enabled").value = String(s.enabled);
+    document.getElementById("sch-day").value    = String(s.dayOfWeek);
+    document.getElementById("sch-hour").value   = String(s.hour);
+  } catch (_) {}
+}
+
+async function saveSchedule() {
+  const enabled   = document.getElementById("sch-enabled").value === "true";
+  const dayOfWeek = Number(document.getElementById("sch-day").value);
+  const hour      = Number(document.getElementById("sch-hour").value);
+  const msg       = document.getElementById("sch-msg");
+  msg.textContent = "저장 중...";
+  try {
+    const res = await fetch(EMAIL_API + "/schedule", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled, dayOfWeek, hour, minute: 0 }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      msg.textContent = "";
+      toast("success", "스케줄이 저장되었습니다");
+    } else {
+      msg.textContent = json.error;
+    }
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+}
+
+// ─────────────────────────────────────────
+// 이메일 발송
+// ─────────────────────────────────────────
+async function sendMortalityReport() {
+  const ok = await Swal.fire({
+    title: "폐사율 리포트를 이메일로 발송할까요?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "발송",
+    cancelButtonText: "취소",
+    confirmButtonColor: "#146C43",
+  });
+  if (!ok.isConfirmed) return;
+
+  try {
+    const EMAIL_API = API.replace("/livestock", "/email");
+    const res = await fetch(EMAIL_API + "/mortality-report", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const json = await res.json();
+    if (json.success) {
+      Swal.fire({ icon: "success", title: "발송 완료!", text: "이메일이 수신자에게 발송되었습니다.", timer: 2500, showConfirmButton: false });
+    } else {
+      Swal.fire({ icon: "error", title: "발송 실패", text: json.error });
+    }
+  } catch (err) {
+    Swal.fire({ icon: "error", title: "발송 실패", text: err.message });
   }
 }
 

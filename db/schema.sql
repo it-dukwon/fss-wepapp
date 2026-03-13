@@ -40,7 +40,22 @@ CREATE INDEX IF NOT EXISTS idx_board_posts_created_at ON board_posts(created_at 
 
 
 -- ────────────────────────────────────────
--- 3. 사육두수 - 뱃지
+-- 3. 앱 설정 (key-value)
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.app_settings (
+  key        VARCHAR(100) PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 기본값: 매주 월요일 09:00 KST 발송
+INSERT INTO public.app_settings (key, value)
+VALUES ('email_mortality_schedule', '{"enabled":true,"dayOfWeek":1,"hour":9,"minute":0}')
+ON CONFLICT (key) DO NOTHING;
+
+
+-- ────────────────────────────────────────
+-- 4. 사육두수 - 뱃지
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.livestock_batches (
   batch_id          INTEGER NOT NULL DEFAULT nextval('livestock_batches_batch_id_seq'::regclass),

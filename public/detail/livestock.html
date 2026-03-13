@@ -342,7 +342,10 @@
     <div class="ls-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h3 class="ls-section-title" style="margin:0;">폐사율 오버뷰 <small style="font-size:0.8rem;color:#888;">(벤치마크: 월 0.5% / 총 2%)</small></h3>
-        <button class="ls-btn ls-btn-gray" onclick="loadMortality()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+        <div class="ls-btn-row">
+          <button class="ls-btn ls-btn-gray" onclick="loadMortality()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+          <button class="ls-btn ls-btn-primary" onclick="sendMortalityReport()"><i class="fa-solid fa-envelope"></i> 이메일 발송</button>
+        </div>
       </div>
       <div class="ls-table-wrap">
         <table class="ls-table" id="mortality-table">
@@ -367,6 +370,54 @@
       <p style="font-size:0.8rem;color:#888;margin:10px 0 0;">
         ※ 양호: 폐사율 ≤ 벤치마크 &nbsp;|&nbsp; 주의: 벤치마크 초과 ~1.5배 &nbsp;|&nbsp; 불량: 벤치마크 1.5배 초과
       </p>
+    </div>
+
+    <!-- 이메일 자동발송 스케줄 설정 -->
+    <div class="ls-card">
+      <h3 class="ls-section-title">이메일 자동발송 스케줄</h3>
+      <div class="ls-form-grid" style="max-width:600px;">
+        <div class="ls-form-group">
+          <label>활성화</label>
+          <select id="sch-enabled">
+            <option value="true">활성화</option>
+            <option value="false">비활성화</option>
+          </select>
+        </div>
+        <div class="ls-form-group">
+          <label>발송 요일</label>
+          <select id="sch-day">
+            <option value="0">일요일</option>
+            <option value="1">월요일</option>
+            <option value="2">화요일</option>
+            <option value="3">수요일</option>
+            <option value="4">목요일</option>
+            <option value="5">금요일</option>
+            <option value="6">토요일</option>
+          </select>
+        </div>
+        <div class="ls-form-group">
+          <label>발송 시각 (KST)</label>
+          <select id="sch-hour">
+            <option value="6">06:00</option>
+            <option value="7">07:00</option>
+            <option value="8">08:00</option>
+            <option value="9">09:00</option>
+            <option value="10">10:00</option>
+            <option value="11">11:00</option>
+            <option value="12">12:00</option>
+            <option value="13">13:00</option>
+            <option value="14">14:00</option>
+            <option value="15">15:00</option>
+            <option value="16">16:00</option>
+            <option value="17">17:00</option>
+            <option value="18">18:00</option>
+          </select>
+        </div>
+      </div>
+      <div class="ls-btn-row">
+        <button class="ls-btn ls-btn-primary" onclick="saveSchedule()">저장</button>
+        <span id="sch-msg" style="font-size:0.85rem;color:#555;"></span>
+      </div>
     </div>
   </div>
 
