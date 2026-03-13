@@ -592,8 +592,7 @@ async function loadBadgeFarmSelect() {
     const opt = document.createElement('option');
     opt.value = f.농장ID;
     opt.textContent = f.농장명;
-    opt.dataset.manager = f.관리자 || '';
-    opt.dataset.farmId  = f.농장ID;
+    opt.dataset.companyId = f.feed_company_id || '';
     sel.appendChild(opt);
   });
 }
@@ -685,7 +684,8 @@ async function addBadge() {
     ['bd-stock-count','bd-prev-count'].forEach(id => { if (get(id)) get(id).value = '0'; });
     get('bd-stock-date').value = '';
     get('bd-farm').value = '';
-    get('bd-manager').value = '';
+    const mgSel = get('bd-manager');
+    if (mgSel) { mgSel.innerHTML = '<option value="">-- 농장 먼저 선택 --</option>'; }
 
     await loadBadges();
     Swal.fire({ icon: 'success', title: '뱃지 등록 완료', timer: 1200, showConfirmButton: false });
@@ -792,11 +792,25 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 사료회사 선택 시 관리자 목록 필터링
   get('fn-company')?.addEventListener('change', filterManagerSelect);
 
-  // 뱃지 탭: 농장 선택 시 관리자 자동입력
+  // 뱃지 탭: 농장 선택 시 해당 사료회사 관리자 목록 채우기
   get('bd-farm')?.addEventListener('change', () => {
     const sel = get('bd-farm');
-    const manager = sel.options[sel.selectedIndex]?.dataset.manager || '';
-    if (get('bd-manager')) get('bd-manager').value = manager;
+    const opt = sel.options[sel.selectedIndex];
+    const companyId = opt?.dataset.companyId || '';
+    const mgSel = get('bd-manager');
+    if (!mgSel) return;
+    mgSel.innerHTML = '<option value="">-- 선택 안 함 --</option>';
+    const filtered = companyId
+      ? _managers.filter(m => String(m.feed_company_id) === companyId)
+      : _managers;
+    filtered.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.manager_name;
+      o.textContent = m.manager_name;
+      mgSel.appendChild(o);
+    });
+    // 관리자가 1명이면 자동 선택
+    if (filtered.length === 1) mgSel.value = filtered[0].manager_name;
   });
 
   await loadFarms();

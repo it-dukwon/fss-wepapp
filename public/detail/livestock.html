@@ -62,7 +62,13 @@
   <!-- ══════════════════════════════════════ -->
   <div id="tab-events" class="ls-tab-content">
     <div class="ls-card">
-      <h3 class="ls-section-title">일별 변동 입력</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">일별 변동 입력</h3>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="ev-msg" style="font-size:0.85rem;color:#555;"></span>
+          <button class="ls-btn ls-btn-primary" onclick="submitEvent()"><i class="fa-solid fa-plus"></i> 등록</button>
+        </div>
+      </div>
       <div class="ls-form-grid">
         <div class="ls-form-group">
           <label>날짜 *</label>
@@ -92,10 +98,6 @@
           <label>메모</label>
           <input type="text" id="ev-note" placeholder="선택 입력" />
         </div>
-      </div>
-      <div class="ls-btn-row">
-        <button class="ls-btn ls-btn-primary" onclick="submitEvent()">저장</button>
-        <span id="ev-msg" style="font-size:0.85rem;color:#555;"></span>
       </div>
     </div>
 
