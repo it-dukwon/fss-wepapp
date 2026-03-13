@@ -17,7 +17,6 @@ document.querySelectorAll(".ls-tab-btn").forEach((btn) => {
 
     if (tab === "status")    loadStatus();
     if (tab === "events")    { loadBatchSelect(); loadEvents(); }
-    if (tab === "batches")   loadBatches();
     if (tab === "mortality") { loadMortality(); loadSchedule(); }
   });
 });
@@ -196,96 +195,6 @@ async function deleteEvent(id) {
   }
 }
 
-// ─────────────────────────────────────────
-// 탭 3: 뱃지 관리
-// ─────────────────────────────────────────
-async function loadBatches() {
-  const activeTbody    = document.getElementById("batches-tbody");
-  const completedTbody = document.getElementById("completed-tbody");
-  activeTbody.innerHTML    = `<tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>`;
-  completedTbody.innerHTML = `<tr><td colspan="7" class="ls-empty">로딩 중...</td></tr>`;
-
-  try {
-    const { batches } = await apiFetch("/batches?status=all");
-    const active    = batches.filter((b) => b.status === "active");
-    const completed = batches.filter((b) => b.status === "completed");
-
-    activeTbody.innerHTML = active.length
-      ? active.map((b) => `<tr>
-          <td>${b.batch_id}</td>
-          <td style="font-weight:700;">${b.badge_name}</td>
-          <td>${b.manager || "-"}</td>
-          <td>${fmtDate(b.stock_in_date)}</td>
-          <td>${fmt(b.stock_in_count)}</td>
-          <td>${fmt(b.prev_month_count)}</td>
-          <td class="num-big">${fmt(b.current_count)}</td>
-          <td><span class="badge-active">활성</span></td>
-          <td><button class="ls-btn ls-btn-gray" onclick="setBatchStatus(${b.batch_id},'completed')">완료처리</button></td>
-        </tr>`).join("")
-      : `<tr><td colspan="9" class="ls-empty">없음</td></tr>`;
-
-    completedTbody.innerHTML = completed.length
-      ? completed.map((b) => `<tr>
-          <td>${b.batch_id}</td>
-          <td style="font-weight:700;">${b.badge_name}</td>
-          <td>${b.manager || "-"}</td>
-          <td>${fmtDate(b.stock_in_date)}</td>
-          <td>${fmt(b.stock_in_count)}</td>
-          <td><span class="badge-done">완료</span></td>
-          <td><button class="ls-btn ls-btn-teal" onclick="setBatchStatus(${b.batch_id},'active')">복원</button></td>
-        </tr>`).join("")
-      : `<tr><td colspan="7" class="ls-empty">없음</td></tr>`;
-  } catch (err) {
-    activeTbody.innerHTML = `<tr><td colspan="9" class="ls-empty">${err.message}</td></tr>`;
-  }
-}
-
-async function addBatch() {
-  const badge_name       = document.getElementById("bt-badge-name").value.trim();
-  const manager          = document.getElementById("bt-manager").value.trim();
-  const stock_in_date    = document.getElementById("bt-stock-date").value;
-  const stock_in_count   = document.getElementById("bt-stock-count").value;
-  const prev_month_count = document.getElementById("bt-prev-count").value;
-  const note             = document.getElementById("bt-note").value.trim();
-
-  if (!badge_name) return Swal.fire({ icon: "warning", title: "뱃지명은 필수입니다." });
-
-  try {
-    await apiFetch("/batches", {
-      method: "POST",
-      body: JSON.stringify({ badge_name, manager, stock_in_date, stock_in_count, prev_month_count, note }),
-    });
-    toast("success", "뱃지가 등록되었습니다");
-    ["bt-badge-name","bt-manager","bt-stock-date","bt-note"].forEach((id) => {
-      document.getElementById(id).value = "";
-    });
-    ["bt-stock-count","bt-prev-count"].forEach((id) => {
-      document.getElementById(id).value = "0";
-    });
-    loadBatches();
-  } catch (err) {
-    Swal.fire({ icon: "error", title: err.message });
-  }
-}
-
-async function setBatchStatus(id, status) {
-  const label = status === "completed" ? "완료 처리" : "활성으로 복원";
-  const ok = await Swal.fire({
-    title: `${label} 하시겠습니까?`, icon: "question",
-    showCancelButton: true, confirmButtonText: label, cancelButtonText: "취소",
-  });
-  if (!ok.isConfirmed) return;
-  try {
-    await apiFetch(`/batches/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
-    toast("success", `${label} 완료`);
-    loadBatches();
-  } catch (err) {
-    Swal.fire({ icon: "error", title: err.message });
-  }
-}
 
 // ─────────────────────────────────────────
 // 탭 4: 폐사율 리포트

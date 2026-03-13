@@ -566,6 +566,143 @@ function enterSimpleEdit(tr, tdE, tdD, saveFn) {
   tdD.appendChild(btnCancel);
 }
 
+// ═══════════════════════════════════════════════════════════
+// 뱃지 관리 (livestock_batches API 사용)
+// ═══════════════════════════════════════════════════════════
+const BATCH_API = '/api/livestock';
+
+function fmtDate2(d) {
+  if (!d) return '-';
+  return String(d).slice(0, 10).replace(/-/g, '.');
+}
+function fmt(n) { return n == null ? '-' : Number(n).toLocaleString(); }
+
+async function loadBadgeFarmSelect() {
+  const sel = get('bd-farm');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- 농장 선택 --</option>';
+  // _farms 캐시가 없으면 다시 fetch
+  const r = await fetch(FARM_API, { credentials: 'include' });
+  const { farms } = await r.json();
+  (farms || []).forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.농장ID;
+    opt.textContent = f.농장명;
+    opt.dataset.manager = f.관리자 || '';
+    opt.dataset.farmId  = f.농장ID;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadBadges() {
+  const activeTbody = get('badges-active-tbody');
+  const doneTbody   = get('badges-done-tbody');
+  if (!activeTbody) return;
+
+  activeTbody.innerHTML = '<tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>';
+  doneTbody.innerHTML   = '<tr><td colspan="8"  class="ls-empty">로딩 중...</td></tr>';
+
+  try {
+    const r = await fetch(`${BATCH_API}/batches?status=all`, { credentials: 'include' });
+    const { batches } = await r.json();
+    const active    = (batches || []).filter(b => b.status === 'active');
+    const completed = (batches || []).filter(b => b.status === 'completed');
+
+    // farm_id → 농장명 맵 (이미 _farms 캐시 활용)
+    const farmMap = {};
+    (await fetch(FARM_API, { credentials: 'include' }).then(r => r.json()).then(d => d.farms || []))
+      .forEach(f => { farmMap[f.농장ID] = f.농장명; });
+
+    activeTbody.innerHTML = active.length
+      ? active.map(b => `<tr>
+          <td>${b.batch_id}</td>
+          <td style="font-weight:700;">${b.badge_name}</td>
+          <td>${farmMap[b.farm_id] || '-'}</td>
+          <td>${b.manager || '-'}</td>
+          <td>${fmtDate2(b.stock_in_date)}</td>
+          <td>${fmt(b.stock_in_count)}</td>
+          <td>${fmt(b.prev_month_count)}</td>
+          <td class="num-big">${fmt(b.current_count)}</td>
+          <td><span class="badge-active">활성</span></td>
+          <td><button class="ls-btn ls-btn-gray" onclick="setBadgeStatus(${b.batch_id},'completed')">완료처리</button></td>
+        </tr>`).join('')
+      : '<tr><td colspan="10" class="ls-empty">없음</td></tr>';
+
+    doneTbody.innerHTML = completed.length
+      ? completed.map(b => `<tr>
+          <td>${b.batch_id}</td>
+          <td style="font-weight:700;">${b.badge_name}</td>
+          <td>${farmMap[b.farm_id] || '-'}</td>
+          <td>${b.manager || '-'}</td>
+          <td>${fmtDate2(b.stock_in_date)}</td>
+          <td>${fmt(b.stock_in_count)}</td>
+          <td><span class="badge-done">완료</span></td>
+          <td><button class="ls-btn ls-btn-teal" onclick="setBadgeStatus(${b.batch_id},'active')">복원</button></td>
+        </tr>`).join('')
+      : '<tr><td colspan="8" class="ls-empty">없음</td></tr>';
+
+  } catch (err) {
+    activeTbody.innerHTML = `<tr><td colspan="10" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+  }
+}
+
+async function addBadge() {
+  const farmSel   = get('bd-farm');
+  const farm_id   = farmSel?.value;
+  const farmName  = farmSel?.options[farmSel.selectedIndex]?.textContent || '';
+  const suffix    = (get('bd-suffix')?.value || '').trim();
+
+  if (!farm_id) { Swal.fire({ icon: 'warning', title: '농장을 선택하세요' }); return; }
+
+  const badge_name       = farmName + suffix;
+  const manager          = get('bd-manager')?.value.trim() || '';
+  const stock_in_date    = get('bd-stock-date')?.value || null;
+  const stock_in_count   = parseInt(get('bd-stock-count')?.value) || 0;
+  const prev_month_count = parseInt(get('bd-prev-count')?.value) || 0;
+  const note             = get('bd-note')?.value.trim() || null;
+
+  try {
+    const r = await fetch(`${BATCH_API}/batches`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ badge_name, farm_id: parseInt(farm_id), manager, stock_in_date, stock_in_count, prev_month_count, note }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+    ['bd-suffix','bd-note'].forEach(id => { if (get(id)) get(id).value = ''; });
+    ['bd-stock-count','bd-prev-count'].forEach(id => { if (get(id)) get(id).value = '0'; });
+    get('bd-stock-date').value = '';
+    get('bd-farm').value = '';
+    get('bd-manager').value = '';
+
+    await loadBadges();
+    Swal.fire({ icon: 'success', title: '뱃지 등록 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '등록 실패', text: err.message });
+  }
+}
+
+async function setBadgeStatus(id, status) {
+  const label = status === 'completed' ? '완료 처리' : '활성으로 복원';
+  const ok = await Swal.fire({
+    title: `${label} 하시겠습니까?`, icon: 'question',
+    showCancelButton: true, confirmButtonText: label, cancelButtonText: '취소',
+  });
+  if (!ok.isConfirmed) return;
+  try {
+    const r = await fetch(`${BATCH_API}/batches/${id}/status`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadBadges();
+    Swal.fire({ icon: 'success', title: `${label} 완료`, timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: err.message });
+  }
+}
+
 // ── 초기 로드 ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   await loadCompanySelects();
@@ -574,5 +711,22 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 사료회사 선택 시 관리자 목록 필터링
   get('fn-company')?.addEventListener('change', filterManagerSelect);
 
+  // 뱃지 탭: 농장 선택 시 관리자 자동입력
+  get('bd-farm')?.addEventListener('change', () => {
+    const sel = get('bd-farm');
+    const manager = sel.options[sel.selectedIndex]?.dataset.manager || '';
+    if (get('bd-manager')) get('bd-manager').value = manager;
+  });
+
   await loadFarms();
+});
+
+// 탭 전환 시 뱃지 탭 로드
+document.querySelectorAll('.ls-tab-btn').forEach(btn => {
+  if (btn.dataset.tab === 'badges') {
+    btn.addEventListener('click', async () => {
+      await loadBadgeFarmSelect();
+      await loadBadges();
+    });
+  }
 });

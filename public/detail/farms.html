@@ -19,6 +19,7 @@
     <button class="ls-tab-btn active" data-tab="farms">농장</button>
     <button class="ls-tab-btn" data-tab="companies">사료회사</button>
     <button class="ls-tab-btn" data-tab="managers">관리자</button>
+    <button class="ls-tab-btn" data-tab="badges">뱃지</button>
   </div>
 
   <!-- 탭 1: 농장 -->
@@ -156,6 +157,84 @@
           </thead>
           <tbody id="manager-tbody">
             <tr><td colspan="7" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭 4: 뱃지 -->
+  <div id="tab-badges" class="ls-tab-content">
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">신규 뱃지 등록</h3>
+        <button class="ls-btn ls-btn-primary" onclick="addBadge()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
+      <div class="ls-form-grid">
+        <div class="ls-form-group">
+          <label>농장 *</label>
+          <select id="bd-farm"></select>
+        </div>
+        <div class="ls-form-group">
+          <label>뱃지 구분 (A/B/C 등, 없으면 공란)</label>
+          <input type="text" id="bd-suffix" placeholder="예: A, B, C" maxlength="5" />
+        </div>
+        <div class="ls-form-group">
+          <label>관리자 (자동입력)</label>
+          <input type="text" id="bd-manager" placeholder="농장 선택 시 자동입력" />
+        </div>
+        <div class="ls-form-group">
+          <label>입식일자</label>
+          <input type="date" id="bd-stock-date" />
+        </div>
+        <div class="ls-form-group">
+          <label>입식두수</label>
+          <input type="number" id="bd-stock-count" min="0" value="0" />
+        </div>
+        <div class="ls-form-group">
+          <label>전월이월두수</label>
+          <input type="number" id="bd-prev-count" min="0" value="0" />
+        </div>
+        <div class="ls-form-group" style="grid-column:span 2;">
+          <label>메모</label>
+          <input type="text" id="bd-note" />
+        </div>
+      </div>
+    </div>
+
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">활성 뱃지</h3>
+        <button class="ls-btn ls-btn-gray" onclick="loadBadges()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+      </div>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>뱃지명</th><th>농장</th><th>관리자</th>
+              <th>입식일</th><th>입식두수</th><th>전월이월</th>
+              <th>현재두수</th><th>상태</th><th>완료처리</th>
+            </tr>
+          </thead>
+          <tbody id="badges-active-tbody">
+            <tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ls-card">
+      <h3 class="ls-section-title">완료 뱃지</h3>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>뱃지명</th><th>농장</th><th>관리자</th>
+              <th>입식일</th><th>입식두수</th><th>상태</th><th>복원</th>
+            </tr>
+          </thead>
+          <tbody id="badges-done-tbody">
+            <tr><td colspan="8" class="ls-empty">완료된 뱃지 없음</td></tr>
           </tbody>
         </table>
       </div>

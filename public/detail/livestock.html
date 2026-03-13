@@ -19,7 +19,6 @@
   <div class="ls-tabs">
     <button class="ls-tab-btn active" data-tab="status">현황</button>
     <button class="ls-tab-btn" data-tab="events">이벤트 입력</button>
-    <button class="ls-tab-btn" data-tab="batches">뱃지 관리</button>
     <button class="ls-tab-btn" data-tab="mortality">폐사율 리포트</button>
   </div>
 
@@ -123,80 +122,6 @@
           </thead>
           <tbody id="events-tbody">
             <tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════ -->
-  <!-- 탭 3: 뱃지 관리 -->
-  <!-- ══════════════════════════════════════ -->
-  <div id="tab-batches" class="ls-tab-content">
-    <!-- 신규 등록 -->
-    <div class="ls-card">
-      <h3 class="ls-section-title">신규 뱃지 등록</h3>
-      <div class="ls-form-grid">
-        <div class="ls-form-group">
-          <label>뱃지명 *</label>
-          <input type="text" id="bt-badge-name" placeholder="예: 선지농장, 이레농장A" />
-        </div>
-        <div class="ls-form-group">
-          <label>관리자</label>
-          <input type="text" id="bt-manager" />
-        </div>
-        <div class="ls-form-group">
-          <label>입식일자</label>
-          <input type="date" id="bt-stock-date" />
-        </div>
-        <div class="ls-form-group">
-          <label>입식두수</label>
-          <input type="number" id="bt-stock-count" min="0" value="0" />
-        </div>
-        <div class="ls-form-group">
-          <label>전월이월두수</label>
-          <input type="number" id="bt-prev-count" min="0" value="0" />
-        </div>
-        <div class="ls-form-group">
-          <label>메모</label>
-          <input type="text" id="bt-note" />
-        </div>
-      </div>
-      <button class="ls-btn ls-btn-primary" onclick="addBatch()">뱃지 등록</button>
-    </div>
-
-    <!-- 활성 뱃지 목록 -->
-    <div class="ls-card">
-      <h3 class="ls-section-title">활성 뱃지</h3>
-      <div class="ls-table-wrap">
-        <table class="ls-table" id="batches-table">
-          <thead>
-            <tr>
-              <th>ID</th><th>뱃지명</th><th>관리자</th>
-              <th>입식일</th><th>입식두수</th><th>전월이월</th>
-              <th>현재두수</th><th>상태</th><th>완료처리</th>
-            </tr>
-          </thead>
-          <tbody id="batches-tbody">
-            <tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 완료 뱃지 목록 -->
-    <div class="ls-card">
-      <h3 class="ls-section-title">완료 뱃지</h3>
-      <div class="ls-table-wrap">
-        <table class="ls-table">
-          <thead>
-            <tr>
-              <th>ID</th><th>뱃지명</th><th>관리자</th>
-              <th>입식일</th><th>입식두수</th><th>상태</th><th>복원</th>
-            </tr>
-          </thead>
-          <tbody id="completed-tbody">
-            <tr><td colspan="7" class="ls-empty">완료된 뱃지 없음</td></tr>
           </tbody>
         </table>
       </div>
