@@ -386,14 +386,34 @@ async function getDatabricksDashboardToken() {
   if (!spToken) throw new Error("No access_token in OIDC response");
 
   // Step 2: Lakeview API로 대시보드 스코프 임베드 크레덴셜 발급
-  const credResp = await axios.post(
-    `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/published/credentials`,
-    {},
-    { headers: { Authorization: `Bearer ${spToken}` } }
-  );
-  const embedToken = credResp.data?.token;
+  // 경로 후보를 순서대로 시도
+  const credPaths = [
+    `/api/2.0/lakeview/dashboards/${dashboardId}/published/credentials`,
+    `/api/2.0/lakeview/dashboards/${dashboardId}/credentials`,
+    `/api/2.0/preview/lakeview/dashboards/${dashboardId}/published/credentials`,
+  ];
+
+  let credResp = null;
+  let lastErr  = null;
+  for (const p of credPaths) {
+    try {
+      credResp = await axios.post(`${instanceUrl}${p}`, {}, {
+        headers: { Authorization: `Bearer ${spToken}` },
+      });
+      console.log("[Dashboard token] 성공 경로:", p, "응답:", JSON.stringify(credResp.data).slice(0, 200));
+      break;
+    } catch (err) {
+      console.warn("[Dashboard token] 경로 실패:", p, err.response?.status, JSON.stringify(err.response?.data));
+      lastErr = err;
+      credResp = null;
+    }
+  }
+
+  if (!credResp) throw lastErr;
+
+  const embedToken = credResp.data?.token ?? credResp.data?.access_token;
   if (!embedToken) {
-    console.error("[Dashboard token] Lakeview 응답:", JSON.stringify(credResp.data));
+    console.error("[Dashboard token] 예상치 못한 응답 구조:", JSON.stringify(credResp.data));
     throw new Error("No embed token in Lakeview credentials response");
   }
   return embedToken;
