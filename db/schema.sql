@@ -24,6 +24,32 @@ CREATE TABLE IF NOT EXISTS public.list_farms (
 
 
 -- ────────────────────────────────────────
+-- 1-2. 사료회사
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.feed_companies (
+  id           SERIAL PRIMARY KEY,
+  company_name CHARACTER VARYING(100) NOT NULL,
+  note         TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ────────────────────────────────────────
+-- 1-3. 관리자 (사료회사 소속)
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.managers (
+  id               SERIAL PRIMARY KEY,
+  manager_name     CHARACTER VARYING(100) NOT NULL,
+  feed_company_id  INTEGER REFERENCES public.feed_companies(id) ON DELETE SET NULL,
+  phone            CHARACTER VARYING(50),
+  note             TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- list_farms에 FK 컬럼 추가 (기존 텍스트 컬럼은 하위 호환용으로 유지)
+ALTER TABLE public.list_farms ADD COLUMN IF NOT EXISTS feed_company_id INTEGER REFERENCES public.feed_companies(id) ON DELETE SET NULL;
+ALTER TABLE public.list_farms ADD COLUMN IF NOT EXISTS manager_id INTEGER REFERENCES public.managers(id) ON DELETE SET NULL;
+
+-- ────────────────────────────────────────
 -- 2. 게시판
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.board_posts (

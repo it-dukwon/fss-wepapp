@@ -1,281 +1,561 @@
+// public/js/farms-crud.js
 
+const FARM_API    = '/api/farms';
+const CO_API      = '/api/farms/feed-companies';
+const MG_API      = '/api/farms/managers';
 
-/***** Read 조회 *****/
-async function fetchFarms() {
-    const tbody = document.getElementById('farm-tbody');
-    tbody.innerHTML = '<tr><td colspan="14">로딩 중...</td></tr>';
+// ── 유틸 ──────────────────────────────────────────────────
+function toDateInput(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+}
+function fmtDate(s) {
+  if (!s) return '-';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+function get(id) { return document.getElementById(id); }
 
-    try {
-    const res = await fetch(apiBase);
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+// ── 탭 전환 ───────────────────────────────────────────────
+document.querySelectorAll('.ls-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ls-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ls-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab)?.classList.add('active');
+    if (btn.dataset.tab === 'farms') loadFarms();
+    if (btn.dataset.tab === 'companies') loadCompanies();
+    if (btn.dataset.tab === 'managers') { loadManagers(); loadCompanySelects(); }
+  });
+});
 
-    const data = await res.json();
-    // 서버가 배열을 직접 반환하거나 { farms: [...] } 형태를 반환할 수 있으므로 모두 처리
-    const farms = Array.isArray(data) ? data : (data.farms || []);
-    tbody.innerHTML = '';
+// ── 사료회사 select 채우기 ─────────────────────────────────
+let _companies = [];
+let _managers  = [];
 
-    if (farms.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="14">등록된 농장이 없습니다.</td></tr>';
-        return;
-    }
+async function loadCompanySelects() {
+  const r = await fetch(CO_API, { credentials: 'include' });
+  const d = await r.json();
+  _companies = d.data || [];
 
-    farms.forEach(farm => {
-        const tr = document.createElement('tr');
-        // 가능한 키들 중 하나를 사용하여 id 설정 (서버 응답에 따라 필드명이 다를 수 있음)
-        const farmId = farm.농장ID ?? farm.id ?? farm.farmId ?? '';
-        tr.dataset.id = farmId;
-
-        // 농장ID (읽기 전용)
-        let td = document.createElement('td');
-        let input = document.createElement('input');
-        input.type = 'number';
-        input.value = farmId;
-        input.readOnly = true;
-        input.className = 'readonly';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 농장명
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.농장명 ?? farm.name ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 지역
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.지역 ?? farm.region ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 뱃지
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.뱃지 ?? farm.badge ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 농장주ID
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'number';
-        input.value = farm.농장주ID ?? farm.ownerId ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 농장주
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.농장주 ?? farm.owner ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 사료회사
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.사료회사 ?? farm.feedCompany ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 관리자ID
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'number';
-        input.value = farm.관리자ID ?? farm.managerId ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 관리자
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.관리자 ?? farm.manager ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 계약상태
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = farm.계약상태 ?? farm.contractStatus ?? '';
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 계약시작일
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'date';
-        input.value = toDateInputValue(farm.계약시작일 ?? farm.contractStart ?? '');
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 계약종료일
-        td = document.createElement('td');
-        input = document.createElement('input');
-        input.type = 'date';
-        input.value = toDateInputValue(farm.계약종료일 ?? farm.contractEnd ?? '');
-        td.appendChild(input);
-        tr.appendChild(td);
-
-        // 수정 버튼
-        td = document.createElement('td');
-        const editBtn = document.createElement('button');
-        editBtn.textContent = '수정';
-        editBtn.className = 'edit-btn';   // 수정 버튼 전용 클래스 추가
-        editBtn.addEventListener('click', () => updateFarm(tr));
-        td.appendChild(editBtn);
-        tr.appendChild(td);
-
-        // 삭제 버튼
-        td = document.createElement('td');
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '삭제';
-        delBtn.className = 'delete-btn';  // 삭제 버튼 전용 클래스
-        delBtn.addEventListener('click', () => deleteFarm(farmId));
-        td.appendChild(delBtn);
-        tr.appendChild(td);
-
-        tbody.appendChild(tr);
+  ['fn-company', 'mg-company'].forEach(id => {
+    const sel = get(id);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">-- 선택 안 함 --</option>';
+    _companies.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.company_name;
+      sel.appendChild(opt);
     });
-    } catch (error) {
-    tbody.innerHTML = '';
-    console.error('fetchFarms 오류:', error);
-    showErrorPopup('농장 정보를 불러오는데 실패했습니다: ' + (error.message || error));
-    }
+    if (prev) sel.value = prev;
+  });
 }
 
-/***** Create 등록 *****/
-async function addFarm() {
-    const farm = {
-    농장명: document.getElementById('new-농장명').value.trim(),
-    지역: document.getElementById('new-지역').value.trim(),
-    뱃지: document.getElementById('new-뱃지').value.trim(),
-    농장주ID: parseInt(document.getElementById('new-농장주ID').value) || null,
-    농장주: document.getElementById('new-농장주').value.trim(),
-    사료회사: document.getElementById('new-사료회사').value.trim(),
-    관리자ID: parseInt(document.getElementById('new-관리자ID').value) || null,
-    관리자: document.getElementById('new-관리자').value.trim(),
-    계약상태: document.getElementById('new-계약상태').value.trim(),
-    계약시작일: document.getElementById('new-계약시작일').value || null,
-    계약종료일: document.getElementById('new-계약종료일').value || null,
-    };
+async function loadManagerSelect() {
+  const r = await fetch(MG_API, { credentials: 'include' });
+  const d = await r.json();
+  _managers = d.data || [];
 
-    try {
-    const res = await fetch(apiBase, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(farm),
-    });
-
-    if (res.ok) {
-        // 성공팝업
-        showSuccessPopup();
-        clearNewFarmInputs();
-        fetchFarms();
-    } else {
-        const text = await res.text();
-        console.error('추가 실패 응답:', res.status, text);
-        showErrorPopup('추가 실패: ' + res.status);
-    }
-    } catch (error) {
-    console.error('addFarm 오류:', error);
-    showErrorPopup('추가 중 오류 발생: ' + (error.message || error));
-    }
+  const sel = get('fn-manager');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- 선택 안 함 --</option>';
+  _managers.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.manager_name + (m.company_name ? ` (${m.company_name})` : '');
+    sel.appendChild(opt);
+  });
+  if (prev) sel.value = prev;
 }
 
-/***** Create 보조 *****/
-function clearNewFarmInputs() {
-    document.querySelectorAll('#new-farm-row input').forEach(i => i.value = '');
-}
-
-/***** Update 수정 *****/
-async function updateFarm(tr) {
-    const inputs = tr.querySelectorAll('input');
-    const id = tr.dataset.id;
-    if (!id) {
-    showErrorPopup('유효한 농장ID가 없습니다.');
-    return;
-    }
-
-    // inputs 순서: 0:ID(readonly), 1:농장명, 2:지역, 3:뱃지, 4:농장주ID, 5:농장주,
-    // 6:사료회사, 7:관리자ID, 8:관리자, 9:계약상태, 10:계약시작일, 11:계약종료일
-    const farm = {
-    농장명: inputs[1].value.trim(),
-    지역: inputs[2].value.trim(),
-    뱃지: inputs[3].value.trim(),
-    농장주ID: parseInt(inputs[4].value) || null,
-    농장주: inputs[5].value.trim(),
-    사료회사: inputs[6].value.trim(),
-    관리자ID: parseInt(inputs[7].value) || null,
-    관리자: inputs[8].value.trim(),
-    계약상태: inputs[9].value.trim(),
-    계약시작일: inputs[10].value || null,
-    계약종료일: inputs[11].value || null,
-    };
-
-    try {
-    const res = await fetch(`${apiBase}/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(farm),
-    });
-
-    if (res.ok) {
-        // 성공
-        showSuccessPopup();
-        fetchFarms();
-    } else {
-        const text = await res.text();
-        console.error('수정 실패 응답:', res.status, text);
-        showErrorPopup('수정 실패: ' + res.status);
-    }
-    } catch (error) {
-    console.error('updateFarm 오류:', error);
-    showErrorPopup('수정 중 오류 발생: ' + (error.message || error));
-    }
-}
-
-/***** Delete 삭제 *****/
-async function deleteFarm(id) {
-  if (!id) {
-    showErrorPopup('유효한 농장ID가 없습니다.');
-    return;
-  }
-  const confirmed = await showConfirmPopup('삭제하시겠습니까?');
-  if (!confirmed) return;
+// ═══════════════════════════════════════════════════════════
+// 농장
+// ═══════════════════════════════════════════════════════════
+async function loadFarms() {
+  const tbody = get('farm-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>';
 
   try {
-    const res = await fetch(`${apiBase}/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
+    const r = await fetch(FARM_API, { credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { farms } = await r.json();
 
-    if (res.ok) {
-      showSuccessPopup();
-      fetchFarms();
-    } else {
-      const text = await res.text();
-      console.error('삭제 실패 응답:', res.status, text);
-      showErrorPopup('삭제 실패: ' + res.status);
+    if (!farms.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="ls-empty">등록된 농장이 없습니다.</td></tr>';
+      return;
     }
-  } catch (error) {
-    console.error('deleteFarm 오류:', error);
-    showErrorPopup('삭제 중 오류 발생: ' + (error.message || error));
+    tbody.innerHTML = '';
+    farms.forEach(f => appendFarmRow(f, tbody));
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="11" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
 }
 
-// 이벤트 바인딩 - Create 버튼 연결 (페이지에 요소가 있는 경우에만)
-const addBtn = document.querySelector('.add-btn');
-if (addBtn) addBtn.addEventListener('click', addFarm);
+function appendFarmRow(f, tbody) {
+  const id = f.농장ID;
+  const tr = document.createElement('tr');
+  tr.dataset.id = id;
 
-// 초기 데이터 로드 (DOM 준비 후) — farms 테이블이 있는 페이지에만 호출
-window.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('farm-tbody')) {
-    fetchFarms();
+  // 읽기 전용 셀
+  const cells = [
+    { val: id,           key: 'id',             readonly: true },
+    { val: f.농장명,      key: '농장명' },
+    { val: f.지역,        key: '지역' },
+    { val: f.농장주,      key: '농장주' },
+    { val: f.사료회사,    key: '사료회사',       readonly: true, fkId: f.feed_company_id, fkKey: 'feed_company_id' },
+    { val: f.관리자,      key: '관리자',         readonly: true, fkId: f.manager_id, fkKey: 'manager_id' },
+    { val: f.계약상태,    key: '계약상태' },
+    { val: fmtDate(f.계약시작일), key: '계약시작일', type: 'date', rawVal: toDateInput(f.계약시작일) },
+    { val: fmtDate(f.계약종료일), key: '계약종료일', type: 'date', rawVal: toDateInput(f.계약종료일) },
+  ];
+
+  cells.forEach(c => {
+    const td = document.createElement('td');
+    td.textContent = c.val ?? '';
+    td.dataset.key = c.key;
+    td.dataset.val = c.rawVal ?? (c.val ?? '');
+    if (c.fkId)  td.dataset.fkId  = c.fkId;
+    if (c.fkKey) td.dataset.fkKey = c.fkKey;
+    if (c.type)  td.dataset.type  = c.type;
+    if (c.readonly) td.dataset.readonly = '1';
+    tr.appendChild(td);
+  });
+
+  // 수정 버튼
+  const tdE = document.createElement('td');
+  const btnE = document.createElement('button');
+  btnE.className = 'ls-btn ls-btn-teal';
+  btnE.innerHTML = '<i class="fa-solid fa-pen"></i>';
+  btnE.onclick = () => enterFarmEdit(tr, f);
+  tdE.appendChild(btnE);
+  tr.appendChild(tdE);
+
+  // 삭제 버튼
+  const tdD = document.createElement('td');
+  const btnD = document.createElement('button');
+  btnD.className = 'ls-btn ls-btn-red';
+  btnD.innerHTML = '<i class="fa-solid fa-trash"></i>';
+  btnD.onclick = () => deleteFarm(id);
+  tdD.appendChild(btnD);
+  tr.appendChild(tdD);
+
+  tbody.appendChild(tr);
+}
+
+function enterFarmEdit(tr, f) {
+  // 이미 편집 중인 다른 행 취소
+  document.querySelectorAll('#farm-tbody tr.editing').forEach(r => { if (r !== tr) loadFarms(); });
+  tr.classList.add('editing');
+
+  const dataCells = [...tr.querySelectorAll('td[data-key]')];
+  dataCells.forEach(td => {
+    if (td.dataset.readonly === '1') return;
+
+    const key  = td.dataset.key;
+    const type = td.dataset.type || 'text';
+
+    // FK 셀 (사료회사, 관리자) → select
+    if (td.dataset.fkKey) {
+      const sel = document.createElement('select');
+      sel.style.width = '100%';
+      sel.innerHTML = '<option value="">-- 선택 안 함 --</option>';
+      const list = td.dataset.fkKey === 'feed_company_id' ? _companies : _managers;
+      list.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.manager_name
+          ? item.manager_name + (item.company_name ? ` (${item.company_name})` : '')
+          : item.company_name;
+        if (String(item.id) === String(td.dataset.fkId)) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      td.innerHTML = '';
+      td.appendChild(sel);
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = type;
+    input.value = td.dataset.val;
+    input.style.width = '100%';
+    td.innerHTML = '';
+    td.appendChild(input);
+  });
+
+  // 수정 → 저장 버튼
+  const btnCell = tr.children[tr.children.length - 2];
+  btnCell.innerHTML = '';
+  const btnSave = document.createElement('button');
+  btnSave.className = 'ls-btn ls-btn-primary';
+  btnSave.textContent = '저장';
+  btnSave.onclick = () => saveFarmEdit(tr);
+  btnCell.appendChild(btnSave);
+
+  // 삭제 → 취소 버튼
+  const cancelCell = tr.children[tr.children.length - 1];
+  cancelCell.innerHTML = '';
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'ls-btn ls-btn-gray';
+  btnCancel.textContent = '취소';
+  btnCancel.onclick = () => loadFarms();
+  cancelCell.appendChild(btnCancel);
+}
+
+async function saveFarmEdit(tr) {
+  const id = tr.dataset.id;
+  const body = {};
+  [...tr.querySelectorAll('td[data-key]')].forEach(td => {
+    if (td.dataset.readonly === '1') return;
+    const input = td.querySelector('input,select');
+    const val = input ? input.value.trim() : td.dataset.val;
+    if (td.dataset.fkKey) {
+      body[td.dataset.fkKey] = val || null;
+    } else {
+      body[td.dataset.key] = val || null;
+    }
+  });
+
+  try {
+    const r = await fetch(`${FARM_API}/${id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadFarms();
+    Swal.fire({ icon: 'success', title: '수정 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '수정 실패', text: err.message });
   }
+}
+
+async function addFarm() {
+  const 농장명 = get('fn-name')?.value.trim();
+  if (!농장명) { Swal.fire({ icon: 'warning', title: '농장명을 입력하세요' }); return; }
+
+  const body = {
+    농장명,
+    지역:            get('fn-region')?.value.trim() || null,
+    농장주:          get('fn-owner')?.value.trim()  || null,
+    feed_company_id: get('fn-company')?.value       || null,
+    manager_id:      get('fn-manager')?.value       || null,
+    계약상태:        get('fn-status')?.value.trim() || null,
+    계약시작일:      get('fn-start')?.value         || null,
+    계약종료일:      get('fn-end')?.value           || null,
+  };
+
+  try {
+    const r = await fetch(FARM_API, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    ['fn-name','fn-region','fn-owner','fn-status','fn-start','fn-end'].forEach(id => { if (get(id)) get(id).value = ''; });
+    get('fn-company').value = '';
+    get('fn-manager').value = '';
+    await loadFarms();
+    Swal.fire({ icon: 'success', title: '등록 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '등록 실패', text: err.message });
+  }
+}
+
+async function deleteFarm(id) {
+  const ok = await Swal.fire({
+    title: '농장을 삭제할까요?', text: `ID: ${id}`, icon: 'warning',
+    showCancelButton: true, confirmButtonText: '삭제', cancelButtonText: '취소',
+    confirmButtonColor: '#d9534f',
+  });
+  if (!ok.isConfirmed) return;
+  try {
+    const r = await fetch(`${FARM_API}/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadFarms();
+    Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '삭제 실패', text: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 사료회사
+// ═══════════════════════════════════════════════════════════
+async function loadCompanies() {
+  const tbody = get('company-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="ls-empty">로딩 중...</td></tr>';
+
+  const r = await fetch(CO_API, { credentials: 'include' });
+  const { data } = await r.json();
+  _companies = data || [];
+
+  if (!_companies.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="ls-empty">등록된 사료회사가 없습니다.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  _companies.forEach(c => {
+    const tr = tbody.insertRow();
+    tr.dataset.id = c.id;
+    tr.insertCell().textContent = c.id;
+    const tdName = tr.insertCell(); tdName.textContent = c.company_name; tdName.dataset.key = 'company_name';
+    const tdNote = tr.insertCell(); tdNote.textContent = c.note ?? '';    tdNote.dataset.key = 'note';
+
+    // 수정
+    const tdE = tr.insertCell();
+    const btnE = document.createElement('button');
+    btnE.className = 'ls-btn ls-btn-teal';
+    btnE.innerHTML = '<i class="fa-solid fa-pen"></i>';
+    btnE.onclick = () => enterSimpleEdit(tr, tdE, tdD, () => saveCompany(tr));
+    tdE.appendChild(btnE);
+
+    // 삭제
+    const tdD = tr.insertCell();
+    const btnD = document.createElement('button');
+    btnD.className = 'ls-btn ls-btn-red';
+    btnD.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    btnD.onclick = () => deleteEntity(CO_API, c.id, loadCompanies, '사료회사');
+    tdD.appendChild(btnD);
+  });
+}
+
+async function saveCompany(tr) {
+  const id = tr.dataset.id;
+  const body = {};
+  [...tr.querySelectorAll('td[data-key]')].forEach(td => {
+    const inp = td.querySelector('input');
+    body[td.dataset.key] = inp ? inp.value.trim() : td.textContent;
+  });
+  try {
+    const r = await fetch(`${CO_API}/${id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadCompanies();
+    Swal.fire({ icon: 'success', title: '수정 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '수정 실패', text: err.message });
+  }
+}
+
+async function addCompany() {
+  const name = get('co-name')?.value.trim();
+  if (!name) { Swal.fire({ icon: 'warning', title: '회사명을 입력하세요' }); return; }
+  try {
+    const r = await fetch(CO_API, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_name: name, note: get('co-note')?.value.trim() || null }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    get('co-name').value = ''; get('co-note').value = '';
+    await loadCompanies();
+    Swal.fire({ icon: 'success', title: '등록 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '등록 실패', text: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 관리자
+// ═══════════════════════════════════════════════════════════
+async function loadManagers() {
+  const tbody = get('manager-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" class="ls-empty">로딩 중...</td></tr>';
+
+  const r = await fetch(MG_API, { credentials: 'include' });
+  const { data } = await r.json();
+  _managers = data || [];
+
+  if (!_managers.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="ls-empty">등록된 관리자가 없습니다.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  _managers.forEach(m => {
+    const tr = tbody.insertRow();
+    tr.dataset.id = m.id;
+    tr.insertCell().textContent = m.id;
+    const tdName = tr.insertCell(); tdName.textContent = m.manager_name;       tdName.dataset.key = 'manager_name';
+    const tdCo   = tr.insertCell(); tdCo.textContent   = m.company_name ?? '-'; // 읽기 전용 (join 값)
+    const tdPhone= tr.insertCell(); tdPhone.textContent= m.phone ?? '';         tdPhone.dataset.key = 'phone';
+    const tdNote = tr.insertCell(); tdNote.textContent = m.note ?? '';          tdNote.dataset.key = 'note';
+
+    const tdE = tr.insertCell();
+    const btnE = document.createElement('button');
+    btnE.className = 'ls-btn ls-btn-teal';
+    btnE.innerHTML = '<i class="fa-solid fa-pen"></i>';
+    btnE.onclick = () => enterManagerEdit(tr, m);
+    tdE.appendChild(btnE);
+
+    const tdD = tr.insertCell();
+    const btnD = document.createElement('button');
+    btnD.className = 'ls-btn ls-btn-red';
+    btnD.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    btnD.onclick = () => deleteEntity(MG_API, m.id, loadManagers, '관리자');
+    tdD.appendChild(btnD);
+  });
+}
+
+function enterManagerEdit(tr, m) {
+  document.querySelectorAll('#manager-tbody tr.editing').forEach(r => { if (r !== tr) loadManagers(); });
+  tr.classList.add('editing');
+
+  // manager_name
+  const tdName = tr.querySelector('td[data-key="manager_name"]');
+  if (tdName) { tdName.innerHTML = ''; const i = document.createElement('input'); i.value = m.manager_name; i.style.width='100%'; tdName.appendChild(i); }
+
+  // 사료회사 (select)
+  const tdCo = tr.cells[2]; // company_name (join, read-only display) → replace with select
+  tdCo.innerHTML = '';
+  const sel = document.createElement('select');
+  sel.style.width = '100%';
+  sel.dataset.key = 'feed_company_id';
+  sel.innerHTML = '<option value="">-- 선택 안 함 --</option>';
+  _companies.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.company_name;
+    if (c.id === m.feed_company_id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  tdCo.appendChild(sel);
+
+  // phone
+  const tdPhone = tr.querySelector('td[data-key="phone"]');
+  if (tdPhone) { tdPhone.innerHTML = ''; const i = document.createElement('input'); i.value = m.phone ?? ''; i.style.width='100%'; tdPhone.appendChild(i); }
+
+  // note
+  const tdNote = tr.querySelector('td[data-key="note"]');
+  if (tdNote) { tdNote.innerHTML = ''; const i = document.createElement('input'); i.value = m.note ?? ''; i.style.width='100%'; tdNote.appendChild(i); }
+
+  // 수정 → 저장
+  const tdE = tr.cells[tr.cells.length - 2];
+  tdE.innerHTML = '';
+  const btnSave = document.createElement('button');
+  btnSave.className = 'ls-btn ls-btn-primary';
+  btnSave.textContent = '저장';
+  btnSave.onclick = () => saveManager(tr);
+  tdE.appendChild(btnSave);
+
+  // 삭제 → 취소
+  const tdD = tr.cells[tr.cells.length - 1];
+  tdD.innerHTML = '';
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'ls-btn ls-btn-gray';
+  btnCancel.textContent = '취소';
+  btnCancel.onclick = () => loadManagers();
+  tdD.appendChild(btnCancel);
+}
+
+async function saveManager(tr) {
+  const id = tr.dataset.id;
+  const body = {};
+  [...tr.querySelectorAll('td[data-key], td select[data-key]')].forEach(el => {
+    const key = el.dataset.key;
+    if (!key) return;
+    const inp = el.querySelector ? (el.querySelector('input,select') || el) : el;
+    body[key] = inp.value?.trim() || null;
+  });
+  // select[data-key] directly
+  const sel = tr.querySelector('select[data-key]');
+  if (sel) body[sel.dataset.key] = sel.value || null;
+
+  try {
+    const r = await fetch(`${MG_API}/${id}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadManagers();
+    Swal.fire({ icon: 'success', title: '수정 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '수정 실패', text: err.message });
+  }
+}
+
+async function addManager() {
+  const name = get('mg-name')?.value.trim();
+  if (!name) { Swal.fire({ icon: 'warning', title: '이름을 입력하세요' }); return; }
+  const body = {
+    manager_name:    name,
+    feed_company_id: get('mg-company')?.value || null,
+    phone:           get('mg-phone')?.value.trim() || null,
+    note:            get('mg-note')?.value.trim()  || null,
+  };
+  try {
+    const r = await fetch(MG_API, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    ['mg-name','mg-phone','mg-note'].forEach(id => { if (get(id)) get(id).value = ''; });
+    get('mg-company').value = '';
+    await loadManagers();
+    Swal.fire({ icon: 'success', title: '등록 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '등록 실패', text: err.message });
+  }
+}
+
+// ── 공통 삭제 ─────────────────────────────────────────────
+async function deleteEntity(apiUrl, id, reloadFn, label) {
+  const ok = await Swal.fire({
+    title: `${label}을 삭제할까요?`, text: `ID: ${id}`, icon: 'warning',
+    showCancelButton: true, confirmButtonText: '삭제', cancelButtonText: '취소',
+    confirmButtonColor: '#d9534f',
+  });
+  if (!ok.isConfirmed) return;
+  try {
+    const r = await fetch(`${apiUrl}/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await reloadFn();
+    Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '삭제 실패', text: err.message });
+  }
+}
+
+// ── 공통 인라인 편집 (사료회사용) ─────────────────────────
+function enterSimpleEdit(tr, tdE, tdD, saveFn) {
+  tr.classList.add('editing');
+  [...tr.querySelectorAll('td[data-key]')].forEach(td => {
+    const inp = document.createElement('input');
+    inp.value = td.textContent;
+    inp.style.width = '100%';
+    td.innerHTML = '';
+    td.appendChild(inp);
+  });
+  tdE.innerHTML = '';
+  const btnSave = document.createElement('button');
+  btnSave.className = 'ls-btn ls-btn-primary';
+  btnSave.textContent = '저장';
+  btnSave.onclick = saveFn;
+  tdE.appendChild(btnSave);
+
+  tdD.innerHTML = '';
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'ls-btn ls-btn-gray';
+  btnCancel.textContent = '취소';
+  btnCancel.onclick = () => loadCompanies();
+  tdD.appendChild(btnCancel);
+}
+
+// ── 초기 로드 ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadCompanySelects();
+  await loadManagerSelect();
+  await loadFarms();
 });

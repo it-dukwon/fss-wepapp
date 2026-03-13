@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:www.notion.so)",
-      "Bash(ls C:/Users/dnftk/OneDrive/문서/DEV/fss-wepapp/.env* 2>/dev/null; cat C:/Users/dnftk/OneDrive/문서/DEV/fss-wepapp/.gitignore 2>/dev/null || echo \"no .gitignore\")"
+      "Bash(ls C:/Users/dnftk/OneDrive/문서/DEV/fss-wepapp/.env* 2>/dev/null; cat C:/Users/dnftk/OneDrive/문서/DEV/fss-wepapp/.gitignore 2>/dev/null || echo \"no .gitignore\")",
+      "Bash(python -c \"\nfrom pptx import Presentation\n\npath = r'C:/Users/dnftk/Documents/2025_광탱영림_크로스_프로젝트/1_계열화사업소개_및_자동화_필요한부분_요청.pptx'\nprs = Presentation\\(path\\)\n\nfor i, slide in enumerate\\(prs.slides, 1\\):\n    print\\(f'=== 슬라이드 {i} ==='\\)\n    for shape in slide.shapes:\n        if shape.has_text_frame:\n            for para in shape.text_frame.paragraphs:\n                text = para.text.strip\\(\\)\n                if text:\n                    print\\(text\\)\n    print\\(\\)\n\" 2>&1)",
+      "Bash(python -c \"\nimport sys\nimport io\nsys.stdout = io.TextIOWrapper\\(sys.stdout.buffer, encoding='utf-8', errors='replace'\\)\n\nfrom pptx import Presentation\n\npath = r'C:/Users/dnftk/Documents/2025_광탱영림_크로스_프로젝트/1_계열화사업소개_및_자동화_필요한부분_요청.pptx'\nprs = Presentation\\(path\\)\n\nfor i, slide in enumerate\\(prs.slides, 1\\):\n    print\\(f'=== 슬라이드 {i} ==='\\)\n    for shape in slide.shapes:\n        if shape.has_text_frame:\n            for para in shape.text_frame.paragraphs:\n                text = para.text.strip\\(\\)\n                if text:\n                    print\\(text\\)\n    print\\(\\)\n\" 2>&1)",
+      "Bash(python -c \"\nimport sys\nimport io\nsys.stdout = io.TextIOWrapper\\(sys.stdout.buffer, encoding='utf-8', errors='replace'\\)\n\nfrom pptx import Presentation\n\npath = r'C:/Users/dnftk/Documents/2025_광탱영림_크로스_프로젝트/1_계열화사업소개_및_자동화_필요한부분_요청.pptx'\nprs = Presentation\\(path\\)\n\nprint\\(f'총 슬라이드 수: {len\\(prs.slides\\)}'\\)\n\nfor i, slide in enumerate\\(prs.slides, 1\\):\n    if i <= 17:\n        continue\n    print\\(f'=== 슬라이드 {i} ==='\\)\n    for shape in slide.shapes:\n        if shape.has_text_frame:\n            for para in shape.text_frame.paragraphs:\n                text = para.text.strip\\(\\)\n                if text:\n                    print\\(text\\)\n    print\\(\\)\n\" 2>&1)"
     ]
   }
 }

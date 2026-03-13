@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>공지사항 상세</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
   <header class="page-header">
@@ -13,39 +14,30 @@
     <h2 class="detail-title">공지사항 상세</h2>
   </header>
 
-    
-  <div class="detail-section">
+  <article class="notice-detail">
+    <p style="margin:0 0 16px;">
+      <a href="/board" style="color:var(--green-main);font-weight:700;text-decoration:none;">← 목록</a>
+    </p>
 
-    <div class="board-wrap">
-        <p class="board-back">
-        <a class="link" href="/board">← 목록</a>
-        </p>
+    <h2 id="title" class="notice-detail-title">...</h2>
+    <div id="meta" class="notice-detail-meta muted"></div>
+    <div id="body" class="notice-detail-body"></div>
 
-        <article class="notice-detail">
-          <h2 id="title" class="notice-detail-title">...</h2>
-          <div id="meta" class="notice-detail-meta muted"></div>
+    <details class="notice-admin" data-admin-only style="display:none;margin-top:24px;">
+      <summary>관리자: 수정/삭제</summary>
+      <div class="notice-form">
+        <input id="editTitle" class="notice-input" />
+        <textarea id="editBody" class="notice-textarea"></textarea>
+        <div class="notice-actions">
+          <button class="ls-btn ls-btn-primary" id="btnSave">저장</button>
+          <button class="ls-btn ls-btn-red" id="btnDelete">삭제</button>
+          <span class="muted" id="msg"></span>
+        </div>
+      </div>
+    </details>
+  </article>
 
-          <div id="body" class="notice-detail-body"></div>
-
-          <details class="notice-admin" data-admin-only style="display:none;">
-            <summary>관리자: 수정/삭제</summary>
-
-            <div class="notice-form">
-              <input id="editTitle" class="notice-input" />
-              <textarea id="editBody" class="notice-textarea"></textarea>
-
-              <div class="notice-actions">
-                <button class="ls-btn ls-btn-primary" id="btnSave">저장</button>
-                <button class="ls-btn ls-btn-red" id="btnDelete">삭제</button>
-                <span class="muted" id="msg"></span>
-              </div>
-            </div>
-          </details>
-        </article>
-        
-    </div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="/js/board-detail.js"></script>
 </body>
 </html>

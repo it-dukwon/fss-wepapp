@@ -14,46 +14,162 @@
     <h2 class="detail-title">농장 관리</h2>
   </header>
 
-  <div class="ls-card">
-    <h3 class="ls-section-title">농장 목록</h3>
-    <div class="ls-table-wrap">
-      <table class="ls-table" id="farm-table">
-        <thead>
-          <tr>
-            <th>농장ID</th><th>농장명</th>
-            <th>지역</th><th>뱃지</th>
-            <th>농장주ID</th><th>농장주</th>
-            <th>사료회사</th>
-            <th>관리자ID</th><th>관리자</th>
-            <th>계약상태</th><th>계약시작일</th><th>계약종료일</th>
-            <th>수정</th><th>삭제</th>
-          </tr>
-        </thead>
-        <tbody id="farm-tbody"></tbody>
-        <tfoot>
-          <tr id="new-farm-row">
-            <td>자동생성</td>
-            <td><input type="text" id="new-농장명" /></td>
-            <td><input type="text" id="new-지역" /></td>
-            <td><input type="text" id="new-뱃지" /></td>
-            <td><input type="number" id="new-농장주ID" /></td>
-            <td><input type="text" id="new-농장주" /></td>
-            <td><input type="text" id="new-사료회사" /></td>
-            <td><input type="number" id="new-관리자ID" /></td>
-            <td><input type="text" id="new-관리자" /></td>
-            <td><input type="text" id="new-계약상태" /></td>
-            <td><input type="date" id="new-계약시작일" /></td>
-            <td><input type="date" id="new-계약종료일" /></td>
-            <td colspan="2"><button class="ls-btn ls-btn-yellow add-btn">추가</button></td>
-          </tr>
-        </tfoot>
-      </table>
+  <!-- 탭 네비게이션 -->
+  <div class="ls-tabs">
+    <button class="ls-tab-btn active" data-tab="farms">농장</button>
+    <button class="ls-tab-btn" data-tab="companies">사료회사</button>
+    <button class="ls-tab-btn" data-tab="managers">관리자</button>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 1: 농장 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-farms" class="ls-tab-content active">
+
+    <div class="ls-card">
+      <h3 class="ls-section-title">신규 농장 등록</h3>
+      <div class="ls-form-grid">
+        <div class="ls-form-group">
+          <label>농장명 *</label>
+          <input type="text" id="fn-name" placeholder="농장명" />
+        </div>
+        <div class="ls-form-group">
+          <label>지역</label>
+          <input type="text" id="fn-region" placeholder="예: 경기 이천" />
+        </div>
+        <div class="ls-form-group">
+          <label>농장주</label>
+          <input type="text" id="fn-owner" />
+        </div>
+        <div class="ls-form-group">
+          <label>사료회사</label>
+          <select id="fn-company"></select>
+        </div>
+        <div class="ls-form-group">
+          <label>관리자</label>
+          <select id="fn-manager"></select>
+        </div>
+        <div class="ls-form-group">
+          <label>계약상태</label>
+          <input type="text" id="fn-status" placeholder="예: 계약중" />
+        </div>
+        <div class="ls-form-group">
+          <label>계약시작일</label>
+          <input type="date" id="fn-start" />
+        </div>
+        <div class="ls-form-group">
+          <label>계약종료일</label>
+          <input type="date" id="fn-end" />
+        </div>
+      </div>
+      <div class="ls-btn-row">
+        <button class="ls-btn ls-btn-primary" onclick="addFarm()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
+    </div>
+
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">농장 목록</h3>
+        <button class="ls-btn ls-btn-gray" onclick="loadFarms()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+      </div>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>농장명</th><th>지역</th><th>농장주</th>
+              <th>사료회사</th><th>관리자</th><th>계약상태</th>
+              <th>계약시작일</th><th>계약종료일</th><th>수정</th><th>삭제</th>
+            </tr>
+          </thead>
+          <tbody id="farm-tbody">
+            <tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 2: 사료회사 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-companies" class="ls-tab-content">
+    <div class="ls-card">
+      <h3 class="ls-section-title">사료회사 등록</h3>
+      <div class="ls-form-grid" style="max-width:600px;">
+        <div class="ls-form-group">
+          <label>회사명 *</label>
+          <input type="text" id="co-name" placeholder="사료회사명" />
+        </div>
+        <div class="ls-form-group">
+          <label>메모</label>
+          <input type="text" id="co-note" />
+        </div>
+      </div>
+      <div class="ls-btn-row">
+        <button class="ls-btn ls-btn-primary" onclick="addCompany()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
+    </div>
+
+    <div class="ls-card">
+      <h3 class="ls-section-title">사료회사 목록</h3>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr><th>ID</th><th>회사명</th><th>메모</th><th>수정</th><th>삭제</th></tr>
+          </thead>
+          <tbody id="company-tbody">
+            <tr><td colspan="5" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- 탭 3: 관리자 -->
+  <!-- ══════════════════════════════════════ -->
+  <div id="tab-managers" class="ls-tab-content">
+    <div class="ls-card">
+      <h3 class="ls-section-title">관리자 등록</h3>
+      <div class="ls-form-grid" style="max-width:700px;">
+        <div class="ls-form-group">
+          <label>이름 *</label>
+          <input type="text" id="mg-name" placeholder="관리자 이름" />
+        </div>
+        <div class="ls-form-group">
+          <label>소속 사료회사</label>
+          <select id="mg-company"></select>
+        </div>
+        <div class="ls-form-group">
+          <label>연락처</label>
+          <input type="text" id="mg-phone" placeholder="010-0000-0000" />
+        </div>
+        <div class="ls-form-group">
+          <label>메모</label>
+          <input type="text" id="mg-note" />
+        </div>
+      </div>
+      <div class="ls-btn-row">
+        <button class="ls-btn ls-btn-primary" onclick="addManager()"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
+    </div>
+
+    <div class="ls-card">
+      <h3 class="ls-section-title">관리자 목록</h3>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr><th>ID</th><th>이름</th><th>사료회사</th><th>연락처</th><th>메모</th><th>수정</th><th>삭제</th></tr>
+          </thead>
+          <tbody id="manager-tbody">
+            <tr><td colspan="7" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="../js/popup.js"></script>
-  <script src="../js/script.js"></script>
   <script src="../js/farms-crud.js"></script>
 </body>
 </html>
