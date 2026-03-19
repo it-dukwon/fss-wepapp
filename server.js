@@ -368,43 +368,25 @@ app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
 });
 
 async function getDatabricksDashboardToken() {
+  // Databricks AI/BI (Lakeview) 대시보드 embed 토큰 발급
+  // PAT으로 Lakeview embed 토큰 API를 호출 → dashboard ID 클레임이 포함된 JWT 반환
   const instanceUrl = "https://adb-3997551919284009.9.azuredatabricks.net";
   const dashboardId = "01f0bba8df9b1c0ebcf5dc38714d79aa";
+  const pat = process.env.DATABRICKS_TOKEN;
+  if (!pat) throw new Error("DATABRICKS_TOKEN 환경변수가 없습니다");
 
-  // 1단계: M2M 서비스 토큰 발급
-  let serviceToken;
   try {
     const resp = await axios.post(
-      `${instanceUrl}/oidc/v1/token`,
-      new URLSearchParams({
-        grant_type:    "client_credentials",
-        client_id:     process.env.DATABRICKS_CLIENT_ID,
-        client_secret: process.env.DATABRICKS_CLIENT_SECRET,
-        scope:         "all-apis",
-      }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
-    serviceToken = resp.data?.access_token;
-    if (!serviceToken) throw new Error("No access_token in Databricks OIDC response");
-    console.log("[Dashboard token] M2M 서비스 토큰 발급 성공");
-  } catch (err) {
-    console.error("[Dashboard token] M2M 오류:", err.response?.data || err.message);
-    throw err;
-  }
-
-  // 2단계: 대시보드 전용 임베드 토큰 발급 (dashboard ID 클레임 포함)
-  try {
-    const embedResp = await axios.post(
-      `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/credentials/token`,
+      `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token`,
       {},
-      { headers: { Authorization: `Bearer ${serviceToken}` } }
+      { headers: { Authorization: `Bearer ${pat}` } }
     );
-    const embedToken = embedResp.data?.token ?? embedResp.data?.access_token;
-    if (!embedToken) throw new Error("임베드 토큰 응답에 token 없음: " + JSON.stringify(embedResp.data));
-    console.log("[Dashboard token] 임베드 토큰 발급 성공");
-    return embedToken;
+    const token = resp.data?.token ?? resp.data?.access_token;
+    if (!token) throw new Error("embed 토큰 응답에 token 없음: " + JSON.stringify(resp.data));
+    console.log("[Dashboard token] Lakeview embed 토큰 발급 성공");
+    return token;
   } catch (err) {
-    console.error("[Dashboard token] 임베드 토큰 오류:", err.response?.data || err.message);
+    console.error("[Dashboard token] Lakeview embed 토큰 오류:", err.response?.status, err.response?.data || err.message);
     throw err;
   }
 }
