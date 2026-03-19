@@ -389,20 +389,10 @@ async function getDatabricksDashboardToken() {
     throw err;
   }
 
-  // M2M 토큰으로 Lakeview embed 토큰 요청 (확인된 유일한 REST API 엔드포인트)
-  try {
-    const resp = await axios.get(
-      `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token`,
-      { headers: { Authorization: `Bearer ${m2mToken}` } }
-    );
-    const token = resp.data?.token ?? resp.data?.access_token;
-    if (token) { console.log("[Dashboard token] 성공(M2M lakeview credentials/token)"); return token; }
-    console.log("[Dashboard token] 응답 전체:", JSON.stringify(resp.data));
-    throw new Error("응답에 token 없음: " + JSON.stringify(resp.data));
-  } catch (err) {
-    console.log("[Dashboard token] lakeview credentials/token 실패:", err.response?.status, JSON.stringify(err.response?.data || err.message));
-    throw err;
-  }
+  // M2M OIDC 토큰을 aibi-client에 직접 전달 (유효한 JWT)
+  // embed 전용 토큰 API가 존재하지 않으므로, M2M 토큰 자체를 사용
+  console.log("[Dashboard token] M2M 토큰 직접 반환 (aibi-client 전달용)");
+  return m2mToken;
 }
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
