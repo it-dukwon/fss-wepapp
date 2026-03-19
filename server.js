@@ -355,11 +355,11 @@ async function startAzurePostgres(opts = {}) {
   return axios.post(url, {}, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' } });
 }
 
-// GET /api/dashboard/token — 대시보드 임베드용 Databricks OIDC 토큰 발급
-// aibi-client는 Databricks 워크스페이스 OIDC JWT가 필요 (Azure mgmt 토큰 아님)
+// GET /api/dashboard/token — 대시보드 임베드용 scoped 토큰 발급 (3단계)
 app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
   try {
-    const token = await getDatabricksDashboardToken();
+    const user = req.session.user;
+    const token = await getDatabricksDashboardToken(user);
     res.json({ success: true, token });
   } catch (err) {
     console.error("[Dashboard token] 발급 실패:", err.message);
@@ -367,32 +367,53 @@ app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
   }
 });
 
-async function getDatabricksDashboardToken() {
+async function getDatabricksDashboardToken(user) {
   const instanceUrl = "https://adb-3997551919284009.9.azuredatabricks.net";
   const dashboardId = "01f0bba8df9b1c0ebcf5dc38714d79aa";
-  const pat = process.env.DATABRICKS_TOKEN;
-  if (!pat) throw new Error("DATABRICKS_TOKEN 환경변수가 없습니다");
+  const clientId     = process.env.DATABRICKS_CLIENT_ID;
+  const clientSecret = process.env.DATABRICKS_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error("DATABRICKS_CLIENT_ID/SECRET 환경변수가 없습니다");
 
-  // M2M OIDC 토큰 발급
-  let m2mToken;
-  try {
-    const oidcResp = await axios.post(
-      `${instanceUrl}/oidc/v1/token`,
-      new URLSearchParams({ grant_type: "client_credentials", client_id: process.env.DATABRICKS_CLIENT_ID, client_secret: process.env.DATABRICKS_CLIENT_SECRET, scope: "all-apis" }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
-    m2mToken = oidcResp.data?.access_token;
-    if (!m2mToken) throw new Error("M2M OIDC 응답에 access_token 없음");
-    console.log("[Dashboard token] M2M OIDC 토큰 발급 성공");
-  } catch (err) {
-    console.log("[Dashboard token] M2M OIDC 발급 실패:", err.response?.status, err.response?.data || err.message);
-    throw err;
-  }
+  // Basic Auth 헤더 (공식 방식)
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const authHeader = { "Authorization": `Basic ${basicAuth}`, "Content-Type": "application/x-www-form-urlencoded" };
 
-  // M2M OIDC 토큰을 aibi-client에 직접 전달 (유효한 JWT)
-  // embed 전용 토큰 API가 존재하지 않으므로, M2M 토큰 자체를 사용
-  console.log("[Dashboard token] M2M 토큰 직접 반환 (aibi-client 전달용)");
-  return m2mToken;
+  // 1단계: all-apis M2M 토큰
+  const step1 = await axios.post(
+    `${instanceUrl}/oidc/v1/token`,
+    new URLSearchParams({ grant_type: "client_credentials", scope: "all-apis" }),
+    { headers: authHeader }
+  );
+  const m2mToken = step1.data?.access_token;
+  if (!m2mToken) throw new Error("Step1: access_token 없음");
+  console.log("[Dashboard token] Step1 M2M 토큰 성공");
+
+  // 2단계: published/tokeninfo — dashboard_id가 포함된 authorization_details 반환
+  const viewerId = encodeURIComponent(user?.preferred_username || user?.oid || "viewer");
+  const viewerValue = encodeURIComponent(user?.name || "viewer");
+  const step2 = await axios.get(
+    `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/published/tokeninfo?external_viewer_id=${viewerId}&external_value=${viewerValue}`,
+    { headers: { Authorization: `Bearer ${m2mToken}` } }
+  );
+  const tokenInfo = step2.data;
+  console.log("[Dashboard token] Step2 tokeninfo 성공:", JSON.stringify(tokenInfo).slice(0, 200));
+
+  // 3단계: authorization_details를 포함한 scoped 토큰 발급
+  const { authorization_details, ...rest } = tokenInfo;
+  const params = new URLSearchParams({
+    ...rest,
+    grant_type: "client_credentials",
+    authorization_details: JSON.stringify(authorization_details),
+  });
+  const step3 = await axios.post(
+    `${instanceUrl}/oidc/v1/token`,
+    params,
+    { headers: authHeader }
+  );
+  const scopedToken = step3.data?.access_token;
+  if (!scopedToken) throw new Error("Step3: scoped token 없음");
+  console.log("[Dashboard token] Step3 scoped 토큰 발급 성공");
+  return scopedToken;
 }
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
