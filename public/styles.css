@@ -499,6 +499,47 @@ body{
   color: rgba(20,108,67,0.55);
 }
 
+/* ── 메뉴 그룹 섹션 ── */
+.menu-group{
+  margin-bottom: 24px;
+}
+
+.menu-group-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.menu-group-title i{ font-size: 12px; }
+
+.menu-group-title--admin{
+  color: #7c3aed;
+}
+
+.menu-group .quick-card{
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: unset;
+}
+
+.admin-badge{
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #ede9fe;
+  color: #5b21b6;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 /* =========================
    Responsive
 ========================= */

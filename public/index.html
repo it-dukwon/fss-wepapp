@@ -60,17 +60,22 @@
 
       <!-- Content -->
       <section class="content">
-        <!-- Quick cards row -->
-        <div class="quick-row">
+
+        <!-- ── 분석 / 현황 ── -->
+        <div class="menu-group">
+          <h3 class="menu-group-title"><i class="fa-solid fa-chart-line"></i> 분석 / 현황</h3>
           <div class="quick-card">
-            <a class="quick-link" href="detail/dashboard.html" data-menu="종합 대시보드">
+            <a class="quick-link" href="detail/dashboard.html" data-menu="종합 대시보드 분석 현황">
               <i class="fa-solid fa-chart-line"></i>
               <span>종합 대시보드</span>
             </a>
-            <a class="quick-link" href="detail/upload.html" data-menu="등판정 업로드">
-              <i class="fa-solid fa-file-arrow-up"></i>
-              <span>등판정 업로드</span>
-            </a>
+          </div>
+        </div>
+
+        <!-- ── 농장 운영 ── -->
+        <div class="menu-group">
+          <h3 class="menu-group-title"><i class="fa-solid fa-house"></i> 농장 운영</h3>
+          <div class="quick-card">
             <a class="quick-link" href="detail/farms.html" data-menu="농장 관리">
               <i class="fa-solid fa-house"></i>
               <span>농장 관리</span>
@@ -79,55 +84,78 @@
               <i class="fa-solid fa-cow"></i>
               <span>사육두수 관리</span>
             </a>
+            <a class="quick-link" href="detail/upload.html" data-menu="등판정 업로드">
+              <i class="fa-solid fa-file-arrow-up"></i>
+              <span>등판정 업로드</span>
+            </a>
+            <a class="quick-link grid-item--muted" href="#" data-menu="출하 관리">
+              <i class="fa-solid fa-truck"></i>
+              <span>출하 관리</span>
+            </a>
+            <a class="quick-link grid-item--muted" href="#" data-menu="일정 관리">
+              <i class="fa-solid fa-calendar"></i>
+              <span>일정 관리</span>
+            </a>
           </div>
+        </div>
 
+        <!-- ── 커뮤니케이션 ── -->
+        <div class="menu-group">
+          <h3 class="menu-group-title"><i class="fa-solid fa-clipboard"></i> 커뮤니케이션</h3>
           <div class="quick-card">
             <a class="quick-link" href="detail/board.html" data-menu="공지사항 게시판">
               <i class="fa-solid fa-clipboard"></i>
               <span>공지사항</span>
             </a>
-            <a class="quick-link" href="detail/database.html" data-menu="DB 관리 데이터베이스">
-              <i class="fa-solid fa-database"></i>
-              <span>DB관리 (비용절감)</span>
-            </a>
-            <a class="grid-item" href="detail/email-recipients.html" data-menu="이메일 수신대상 알람 수신자">
-              <i class="fa-solid fa-envelope"></i>
-              <span>이메일 수신대상 관리</span>
-            </a>
-            <a class="quick-link admin-only" href="detail/audit-log.html" data-menu="활동 로그 사용자 로그 감사" style="display:none;">
-              <i class="fa-solid fa-scroll"></i>
-              <span>활동 로그</span>
-            </a>
-            <a class="quick-link admin-only" href="detail/admin-users.html" data-menu="관리자 계정 관리 어드민" style="display:none;">
-              <i class="fa-solid fa-user-shield"></i>
-              <span>관리자 계정 관리</span>
-            </a>
-
           </div>
         </div>
 
-        <!-- Icon grid -->
-        <div class="icon-grid">
-          <a class="grid-item" href="#" data-menu="직원 관리">
-            <i class="fa-solid fa-person"></i><span>직원 관리</span>
-          </a>
-          <a class="grid-item" href="#" data-menu="출하 관리">
-            <i class="fa-solid fa-truck"></i><span>출하 관리</span>
-          </a>
-          <a class="grid-item" href="#" data-menu="일정 관리">
-            <i class="fa-solid fa-calendar"></i><span>일정 관리</span>
-          </a>
-
-          <a class="grid-item grid-item--muted" href="#" data-menu="문서 관리">
-            <i class="fa-solid fa-folder-open"></i><span>문서 관리</span>
-          </a>
-          <a class="grid-item grid-item--muted" href="#" data-menu="구매 관리">
-            <i class="fa-solid fa-cart-shopping"></i><span>구매 관리</span>
-          </a>
-          <a class="grid-item grid-item--muted" href="#" data-menu="계정 관리">
-            <i class="fa-solid fa-user"></i><span>계정 관리</span>
-          </a>
+        <!-- ── 준비 중 ── -->
+        <div class="menu-group">
+          <h3 class="menu-group-title"><i class="fa-solid fa-clock"></i> 준비 중</h3>
+          <div class="quick-card">
+            <a class="quick-link grid-item--muted" href="#" data-menu="직원 관리">
+              <i class="fa-solid fa-person"></i>
+              <span>직원 관리</span>
+            </a>
+            <a class="quick-link grid-item--muted" href="#" data-menu="문서 관리">
+              <i class="fa-solid fa-folder-open"></i>
+              <span>문서 관리</span>
+            </a>
+            <a class="quick-link grid-item--muted" href="#" data-menu="구매 관리">
+              <i class="fa-solid fa-cart-shopping"></i>
+              <span>구매 관리</span>
+            </a>
+            <a class="quick-link grid-item--muted" href="#" data-menu="계정 관리">
+              <i class="fa-solid fa-user"></i>
+              <span>계정 관리</span>
+            </a>
+          </div>
         </div>
+
+        <!-- ── 시스템 관리 (관리자 전용) ── -->
+        <div class="menu-group admin-only" style="display:none;">
+          <h3 class="menu-group-title menu-group-title--admin"><i class="fa-solid fa-shield-halved"></i> 시스템 관리 <span class="admin-badge">관리자</span></h3>
+          <div class="quick-card">
+            <a class="quick-link" href="detail/database.html" data-menu="DB 관리 데이터베이스">
+              <i class="fa-solid fa-database"></i>
+              <span>DB 관리</span>
+            </a>
+            <a class="quick-link" href="detail/email-recipients.html" data-menu="이메일 수신대상 알람 수신자">
+              <i class="fa-solid fa-envelope"></i>
+              <span>이메일 수신대상 관리</span>
+            </a>
+            <a class="quick-link" href="detail/audit-log.html" data-menu="활동 로그 사용자 로그 감사">
+              <i class="fa-solid fa-scroll"></i>
+              <span>활동 로그</span>
+            </a>
+            <a class="quick-link" href="detail/admin-users.html" data-menu="관리자 계정 관리 어드민">
+              <i class="fa-solid fa-user-shield"></i>
+              <span>관리자 계정 관리</span>
+            </a>
+          </div>
+        </div>
+
       </section>
     </main>
   </div>
