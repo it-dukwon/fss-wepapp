@@ -368,27 +368,36 @@ app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
 });
 
 async function getDatabricksDashboardToken() {
-  // Databricks AI/BI (Lakeview) 대시보드 embed 토큰 발급
-  // PAT으로 Lakeview embed 토큰 API를 호출 → dashboard ID 클레임이 포함된 JWT 반환
   const instanceUrl = "https://adb-3997551919284009.9.azuredatabricks.net";
   const dashboardId = "01f0bba8df9b1c0ebcf5dc38714d79aa";
   const pat = process.env.DATABRICKS_TOKEN;
   if (!pat) throw new Error("DATABRICKS_TOKEN 환경변수가 없습니다");
 
-  try {
-    const resp = await axios.post(
-      `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token`,
-      {},
-      { headers: { Authorization: `Bearer ${pat}` } }
-    );
-    const token = resp.data?.token ?? resp.data?.access_token;
-    if (!token) throw new Error("embed 토큰 응답에 token 없음: " + JSON.stringify(resp.data));
-    console.log("[Dashboard token] Lakeview embed 토큰 발급 성공");
-    return token;
-  } catch (err) {
-    console.error("[Dashboard token] Lakeview embed 토큰 오류:", err.response?.status, err.response?.data || err.message);
-    throw err;
+  // 후보 엔드포인트를 순서대로 시도 - 성공한 경로를 로그로 확인
+  const candidates = [
+    { method: "post", url: `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/published/credentials/token` },
+    { method: "post", url: `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/embed-credentials` },
+    { method: "post", url: `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials` },
+    { method: "get",  url: `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token` },
+  ];
+
+  for (const { method, url } of candidates) {
+    try {
+      const resp = await axios[method](url, method === "post" ? {} : undefined, {
+        headers: { Authorization: `Bearer ${pat}` },
+      });
+      const token = resp.data?.token ?? resp.data?.access_token;
+      if (token) {
+        console.log(`[Dashboard token] 성공 → ${url}`);
+        return token;
+      }
+      console.log(`[Dashboard token] 응답에 token 없음 (${url}):`, JSON.stringify(resp.data).slice(0, 200));
+    } catch (err) {
+      console.log(`[Dashboard token] 실패 ${err.response?.status} (${url}):`, err.response?.data?.message || err.message);
+    }
   }
+
+  throw new Error("모든 embed 토큰 엔드포인트 실패 - 로그를 확인하세요");
 }
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
