@@ -131,3 +131,22 @@ CREATE TABLE IF NOT EXISTS public.livestock_events (
   CONSTRAINT livestock_events_batch_id_fkey           FOREIGN KEY (batch_id) REFERENCES livestock_batches(batch_id) ON DELETE CASCADE,
   CONSTRAINT livestock_events_batch_id_event_date_key UNIQUE (batch_id, event_date)
 );
+
+
+-- ────────────────────────────────────────
+-- 6. 사용자 활동 로그 (user_activity_logs)
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.user_activity_logs (
+  id            BIGSERIAL PRIMARY KEY,
+  created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  user_upn      VARCHAR(255),                         -- Azure AD UPN (이메일)
+  user_name     VARCHAR(255),                         -- 사용자 표시 이름
+  action        VARCHAR(20)  NOT NULL,                -- INSERT | UPDATE | DELETE | START | STOP
+  resource_type VARCHAR(50)  NOT NULL,                -- farm | feed_company | manager | livestock_batch | livestock_event | board_post | db_server
+  resource_id   VARCHAR(100),                         -- 대상 레코드 PK
+  summary       TEXT                                  -- 사람이 읽기 좋은 요약
+);
+
+CREATE INDEX IF NOT EXISTS user_activity_logs_created_at_idx ON public.user_activity_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS user_activity_logs_user_upn_idx   ON public.user_activity_logs (user_upn);
+CREATE INDEX IF NOT EXISTS user_activity_logs_resource_idx   ON public.user_activity_logs (resource_type, resource_id);

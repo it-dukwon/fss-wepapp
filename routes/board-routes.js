@@ -1,5 +1,6 @@
 // routes/board.js
 const express = require("express");
+const { auditLog } = require("../utils/audit-log");
 
 module.exports = function boardRoutes({ runPgQuery, ensureAdmin }) {
   const router = express.Router();
@@ -62,6 +63,7 @@ module.exports = function boardRoutes({ runPgQuery, ensureAdmin }) {
         [title, body, authorUpn]
       );
 
+      auditLog(req, "INSERT", "board_post", result.rows?.[0]?.id, `게시글 등록: ${title}`);
       res.json({ success: true, id: result.rows?.[0]?.id });
     } catch (err) {
       console.error("Create board post error:", err);
@@ -87,6 +89,7 @@ module.exports = function boardRoutes({ runPgQuery, ensureAdmin }) {
         [title, body, id]
       );
 
+      auditLog(req, "UPDATE", "board_post", id, `게시글 수정: id=${id}, ${title}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Update board post error:", err);
@@ -101,6 +104,7 @@ module.exports = function boardRoutes({ runPgQuery, ensureAdmin }) {
       if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
 
       await runPgQuery(`DELETE FROM board_posts WHERE id = $1`, [id]);
+      auditLog(req, "DELETE", "board_post", id, `게시글 삭제: id=${id}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Delete board post error:", err);

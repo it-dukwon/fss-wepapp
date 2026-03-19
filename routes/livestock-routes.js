@@ -1,5 +1,6 @@
 // routes/livestock-routes.js
 const express = require("express");
+const { auditLog } = require("../utils/audit-log");
 
 module.exports = function livestockRoutes({ runPgQuery }) {
   const router = express.Router();
@@ -67,6 +68,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
           note || null,
         ]
       );
+      auditLog(req, "INSERT", "livestock_batch", result.rows[0].batch_id, `배치 등록: ${badge_name}`);
       res.json({ success: true, batch_id: result.rows[0].batch_id });
     } catch (err) {
       console.error("Create batch error:", err);
@@ -100,6 +102,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
           id,
         ]
       );
+      auditLog(req, "UPDATE", "livestock_batch", id, `배치 수정: ${badge_name}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Update batch error:", err);
@@ -117,6 +120,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       if (!["active", "completed"].includes(status)) return res.status(400).json({ error: "Invalid status" });
 
       await runPgQuery(`UPDATE livestock_batches SET status=$1 WHERE batch_id=$2`, [status, id]);
+      auditLog(req, "UPDATE", "livestock_batch", id, `배치 상태 변경: id=${id} → ${status}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Patch batch status error:", err);
@@ -183,6 +187,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
           note || null,
         ]
       );
+      auditLog(req, "INSERT", "livestock_event", result.rows[0].event_id, `이벤트 등록/수정: batch_id=${batch_id}, 날짜=${event_date}`);
       res.json({ success: true, event_id: result.rows[0].event_id });
     } catch (err) {
       console.error("Create event error:", err);
@@ -204,6 +209,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
          WHERE event_id=$7`,
         [event_date, Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0, note || null, id]
       );
+      auditLog(req, "UPDATE", "livestock_event", id, `이벤트 수정: id=${id}, 날짜=${event_date}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Update event error:", err);
@@ -218,6 +224,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
       await runPgQuery(`DELETE FROM livestock_events WHERE event_id=$1`, [id]);
+      auditLog(req, "DELETE", "livestock_event", id, `이벤트 삭제: id=${id}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Delete event error:", err);

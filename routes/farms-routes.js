@@ -1,5 +1,6 @@
 // routes/farms-routes.js
 const express = require("express");
+const { auditLog } = require("../utils/audit-log");
 
 function parseDateOrNull(dateStr) {
   if (!dateStr) return null;
@@ -30,6 +31,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
         `INSERT INTO feed_companies (company_name, note) VALUES ($1,$2) RETURNING id`,
         [company_name.trim(), note || null]
       );
+      auditLog(req, "INSERT", "feed_company", r.rows[0].id, `사료회사 등록: ${company_name.trim()}`);
       res.json({ success: true, id: r.rows[0].id });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -44,6 +46,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
         `UPDATE feed_companies SET company_name=$1, note=$2 WHERE id=$3`,
         [company_name?.trim(), note || null, id]
       );
+      auditLog(req, "UPDATE", "feed_company", id, `사료회사 수정: ${company_name?.trim()}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -54,6 +57,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
     try {
       const id = parseInt(req.params.id, 10);
       await runPgQuery(`DELETE FROM feed_companies WHERE id=$1`, [id]);
+      auditLog(req, "DELETE", "feed_company", id, `사료회사 삭제: id=${id}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -86,6 +90,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
         `INSERT INTO managers (manager_name, feed_company_id, phone, note) VALUES ($1,$2,$3,$4) RETURNING id`,
         [manager_name.trim(), feed_company_id || null, phone || null, note || null]
       );
+      auditLog(req, "INSERT", "manager", r.rows[0].id, `관리자 등록: ${manager_name.trim()}`);
       res.json({ success: true, id: r.rows[0].id });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -100,6 +105,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
         `UPDATE managers SET manager_name=$1, feed_company_id=$2, phone=$3, note=$4 WHERE id=$5`,
         [manager_name?.trim(), feed_company_id || null, phone || null, note || null, id]
       );
+      auditLog(req, "UPDATE", "manager", id, `관리자 수정: ${manager_name?.trim()}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -110,6 +116,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
     try {
       const id = parseInt(req.params.id, 10);
       await runPgQuery(`DELETE FROM managers WHERE id=$1`, [id]);
+      auditLog(req, "DELETE", "manager", id, `관리자 삭제: id=${id}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -165,6 +172,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
           b.feed_company_id || null, b.manager_id || null,
         ]
       );
+      auditLog(req, "INSERT", "farm", null, `농장 등록: ${b.농장명 || ""}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Add farm error:", err);
@@ -190,6 +198,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
           id,
         ]
       );
+      auditLog(req, "UPDATE", "farm", id, `농장 수정: ${b.농장명 || ""}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Update farm error:", err);
@@ -202,6 +211,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
       await runPgQuery(`DELETE FROM list_farms WHERE "농장ID"=$1`, [id]);
+      auditLog(req, "DELETE", "farm", id, `농장 삭제: id=${id}`);
       res.json({ success: true });
     } catch (err) {
       console.error("Delete farm error:", err);

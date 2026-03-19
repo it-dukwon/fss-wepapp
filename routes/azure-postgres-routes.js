@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const { auditLog } = require("../utils/audit-log");
 
 // Expects to be called like: require('./azure-postgres-routes')({ ensureAdmin })
 module.exports = function ({ ensureAdmin }) {
@@ -82,6 +83,7 @@ module.exports = function ({ ensureAdmin }) {
 
     try {
       const resp = await callMgmtApi("post", resolved.subscriptionId, resolved.resourceGroup, resolved.serverName, "start");
+      auditLog(req, "START", "db_server", resolved.serverName, `DB 서버 시작: ${resolved.serverName}`);
       res.json({ status: "started", details: resp.data || null });
     } catch (err) {
       console.error("Start error:", err.response?.data || err.message || err);
@@ -101,6 +103,7 @@ module.exports = function ({ ensureAdmin }) {
 
     try {
       const resp = await callMgmtApi("post", resolved.subscriptionId, resolved.resourceGroup, resolved.serverName, "stop");
+      auditLog(req, "STOP", "db_server", resolved.serverName, `DB 서버 정지: ${resolved.serverName}`);
       res.json({ status: "stopped", details: resp.data || null });
     } catch (err) {
       console.error("Stop error:", err.response?.data || err.message || err);
