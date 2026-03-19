@@ -373,28 +373,42 @@ async function getDatabricksDashboardToken() {
   const pat = process.env.DATABRICKS_TOKEN;
   if (!pat) throw new Error("DATABRICKS_TOKEN 환경변수가 없습니다");
 
-  // 후보 엔드포인트를 순서대로 시도 - 성공한 경로를 로그로 확인
-  const candidates = [
-    { method: "post", url: `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/published/credentials/token` },
-    { method: "post", url: `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/embed-credentials` },
-    { method: "post", url: `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials` },
-    { method: "get",  url: `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token` },
+  // 1단계: PAT으로 GET 시도 (405→GET, 404→없음)
+  const patCandidates = [
+    { method: "get", url: `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/published/credentials/token` },
+    { method: "get", url: `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/embed-credentials` },
   ];
 
-  for (const { method, url } of candidates) {
+  for (const { method, url } of patCandidates) {
     try {
-      const resp = await axios[method](url, method === "post" ? {} : undefined, {
-        headers: { Authorization: `Bearer ${pat}` },
-      });
+      const resp = await axios[method](url, { headers: { Authorization: `Bearer ${pat}` } });
       const token = resp.data?.token ?? resp.data?.access_token;
-      if (token) {
-        console.log(`[Dashboard token] 성공 → ${url}`);
-        return token;
-      }
+      if (token) { console.log(`[Dashboard token] 성공(PAT) → ${url}`); return token; }
       console.log(`[Dashboard token] 응답에 token 없음 (${url}):`, JSON.stringify(resp.data).slice(0, 200));
     } catch (err) {
       console.log(`[Dashboard token] 실패 ${err.response?.status} (${url}):`, err.response?.data?.message || err.message);
     }
+  }
+
+  // 2단계: M2M OIDC 토큰으로 /credentials/token GET 시도
+  try {
+    const oidcResp = await axios.post(
+      `${instanceUrl}/oidc/v1/token`,
+      new URLSearchParams({ grant_type: "client_credentials", client_id: process.env.DATABRICKS_CLIENT_ID, client_secret: process.env.DATABRICKS_CLIENT_SECRET, scope: "all-apis" }),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
+    const m2mToken = oidcResp.data?.access_token;
+    if (m2mToken) {
+      const embedResp = await axios.get(
+        `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token`,
+        { headers: { Authorization: `Bearer ${m2mToken}` } }
+      );
+      const token = embedResp.data?.token ?? embedResp.data?.access_token;
+      if (token) { console.log("[Dashboard token] 성공(M2M+credentials/token)"); return token; }
+      console.log("[Dashboard token] M2M credentials/token 응답:", JSON.stringify(embedResp.data).slice(0, 200));
+    }
+  } catch (err) {
+    console.log(`[Dashboard token] M2M 실패 ${err.response?.status}:`, err.response?.data?.message || err.message);
   }
 
   throw new Error("모든 embed 토큰 엔드포인트 실패 - 로그를 확인하세요");
