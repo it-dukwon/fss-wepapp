@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>활동 로그</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+    .filter-row label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.78rem;
+      color: #555;
+      gap: 3px;
+    }
+    .filter-row input,
+    .filter-row select {
+      padding: 6px 10px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      min-width: 140px;
+    }
+    .filter-row button {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      height: 32px;
+    }
+    .filter-row button:hover { background: #1d4ed8; }
+    .filter-row .btn-reset {
+      background: #6b7280;
+    }
+    .filter-row .btn-reset:hover { background: #4b5563; }
+
+    .log-table-wrap {
+      overflow-x: auto;
+    }
+    table.log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    table.log-table th {
+      background: #f1f5f9;
+      color: #374151;
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    table.log-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #e9edf3;
+      vertical-align: middle;
+    }
+    table.log-table tr:hover td { background: #f8fafc; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-INSERT  { background:#dcfce7; color:#166534; }
+    .badge-UPDATE  { background:#dbeafe; color:#1e40af; }
+    .badge-DELETE  { background:#fee2e2; color:#991b1b; }
+    .badge-START   { background:#d1fae5; color:#065f46; }
+    .badge-STOP    { background:#fef3c7; color:#92400e; }
+
+    .pagination {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 14px;
+      font-size: 0.85rem;
+    }
+    .pagination button {
+      padding: 4px 12px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.83rem;
+    }
+    .pagination button:disabled { color: #aaa; cursor: default; }
+    .pagination button.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .pagination span { color: #6b7280; }
+
+    #status-msg {
+      padding: 20px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header" id="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">활동 로그</h2>
+  </header>
+
+  <div class="ls-card">
+    <!-- 필터 -->
+    <div class="filter-row">
+      <label>
+        작업 유형
+        <select id="filterAction">
+          <option value="">전체</option>
+          <option value="INSERT">등록</option>
+          <option value="UPDATE">수정</option>
+          <option value="DELETE">삭제</option>
+          <option value="START">DB Start</option>
+          <option value="STOP">DB Stop</option>
+        </select>
+      </label>
+      <label>
+        리소스
+        <select id="filterResource">
+          <option value="">전체</option>
+          <option value="farm">농장</option>
+          <option value="feed_company">사료회사</option>
+          <option value="manager">관리자</option>
+          <option value="livestock_batch">배치</option>
+          <option value="livestock_event">사육이벤트</option>
+          <option value="board_post">게시글</option>
+          <option value="db_server">DB 서버</option>
+        </select>
+      </label>
+      <label>
+        사용자 (UPN)
+        <input type="text" id="filterUser" placeholder="이메일 일부 입력" />
+      </label>
+      <label>
+        시작일
+        <input type="date" id="filterDateFrom" />
+      </label>
+      <label>
+        종료일
+        <input type="date" id="filterDateTo" />
+      </label>
+      <button id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
+      <button id="btnReset" class="btn-reset"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
+    </div>
+
+    <!-- 테이블 -->
+    <div class="log-table-wrap">
+      <div id="status-msg">로딩 중...</div>
+      <table class="log-table" id="logTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>일시 (KST)</th>
+            <th>사용자</th>
+            <th>작업</th>
+            <th>리소스</th>
+            <th>ID</th>
+            <th>요약</th>
+          </tr>
+        </thead>
+        <tbody id="logTbody"></tbody>
+      </table>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <script>
+  (function () {
+    let currentPage = 1;
+    const limit = 50;
+
+    function getFilters() {
+      return {
+        action:        document.getElementById("filterAction").value,
+        resource_type: document.getElementById("filterResource").value,
+        user_upn:      document.getElementById("filterUser").value.trim(),
+        date_from:     document.getElementById("filterDateFrom").value,
+        date_to:       document.getElementById("filterDateTo").value,
+      };
+    }
+
+    async function loadLogs(page) {
+      currentPage = page;
+      const f = getFilters();
+      const params = new URLSearchParams({ page, limit });
+      if (f.action)        params.set("resource_type", f.resource_type || "");
+      if (f.resource_type) params.set("resource_type", f.resource_type);
+      if (f.user_upn)      params.set("user_upn",      f.user_upn);
+      if (f.date_from)     params.set("date_from",     f.date_from);
+      if (f.date_to)       params.set("date_to",       f.date_to);
+
+      const statusEl = document.getElementById("status-msg");
+      const tableEl  = document.getElementById("logTable");
+      statusEl.textContent = "로딩 중...";
+      statusEl.style.display = "";
+      tableEl.style.display = "none";
+
+      try {
+        const url = `/api/audit-logs?${params.toString()}`;
+        const res = await fetch(url, { credentials: "same-origin" });
+        if (res.status === 403) {
+          statusEl.textContent = "관리자만 접근할 수 있습니다.";
+          return;
+        }
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || "오류");
+
+        renderTable(data.logs);
+        renderPagination(data.total, data.page, data.limit);
+        statusEl.style.display = "none";
+        tableEl.style.display = "";
+      } catch (err) {
+        statusEl.textContent = "로드 실패: " + err.message;
+        statusEl.style.color = "#d9534f";
+      }
+    }
+
+    function actionLabel(action) {
+      const map = { INSERT: "등록", UPDATE: "수정", DELETE: "삭제", START: "DB Start", STOP: "DB Stop" };
+      return map[action] || action;
+    }
+
+    function resourceLabel(rt) {
+      const map = {
+        farm: "농장", feed_company: "사료회사", manager: "관리자",
+        livestock_batch: "배치", livestock_event: "사육이벤트",
+        board_post: "게시글", db_server: "DB 서버",
+      };
+      return map[rt] || rt;
+    }
+
+    function toKST(utcStr) {
+      if (!utcStr) return "-";
+      const d = new Date(utcStr);
+      return d.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false })
+               .replace(/\./g, "-").replace(/ /, " ").replace(/-\s/, " ");
+    }
+
+    function renderTable(logs) {
+      const tbody = document.getElementById("logTbody");
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">조회된 로그가 없습니다.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = logs.map((r, i) => `
+        <tr>
+          <td style="color:#aaa;">${r.id}</td>
+          <td style="white-space:nowrap;">${toKST(r.created_at)}</td>
+          <td style="white-space:nowrap;">${r.user_upn || r.user_name || "-"}</td>
+          <td><span class="badge badge-${r.action}">${actionLabel(r.action)}</span></td>
+          <td>${resourceLabel(r.resource_type)}</td>
+          <td>${r.resource_id || "-"}</td>
+          <td>${r.summary || "-"}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderPagination(total, page, limit) {
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const el = document.getElementById("pagination");
+      if (totalPages <= 1) { el.innerHTML = `<span>총 ${total}건</span>`; return; }
+
+      let html = `<span>총 ${total}건</span>`;
+      html += `<button ${page <= 1 ? "disabled" : ""} data-p="${page - 1}">&#8249;</button>`;
+
+      const start = Math.max(1, page - 2);
+      const end   = Math.min(totalPages, page + 2);
+      for (let p = start; p <= end; p++) {
+        html += `<button class="${p === page ? "active" : ""}" data-p="${p}">${p}</button>`;
+      }
+      html += `<button ${page >= totalPages ? "disabled" : ""} data-p="${page + 1}">&#8250;</button>`;
+      el.innerHTML = html;
+
+      el.querySelectorAll("button[data-p]").forEach(btn => {
+        btn.addEventListener("click", () => loadLogs(parseInt(btn.dataset.p, 10)));
+      });
+    }
+
+    document.getElementById("btnSearch").addEventListener("click", () => loadLogs(1));
+    document.getElementById("btnReset").addEventListener("click", () => {
+      document.getElementById("filterAction").value = "";
+      document.getElementById("filterResource").value = "";
+      document.getElementById("filterUser").value = "";
+      document.getElementById("filterDateFrom").value = "";
+      document.getElementById("filterDateTo").value = "";
+      loadLogs(1);
+    });
+    document.getElementById("filterUser").addEventListener("keydown", e => {
+      if (e.key === "Enter") loadLogs(1);
+    });
+
+    // 초기 로드
+    loadLogs(1);
+  })();
+  </script>
+</body>
+</html>

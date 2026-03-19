@@ -94,6 +94,10 @@
               <i class="fa-solid fa-envelope"></i>
               <span>이메일 수신대상 관리</span>
             </a>
+            <a class="quick-link admin-only" href="detail/audit-log.html" data-menu="활동 로그 사용자 로그 감사" style="display:none;">
+              <i class="fa-solid fa-scroll"></i>
+              <span>활동 로그</span>
+            </a>
 
           </div>
         </div>
@@ -130,13 +134,18 @@
       window.location.href = "/logout";
     });
 
-    // 로그인 사용자 이름 표시
+    // 로그인 사용자 이름 표시 + 관리자 메뉴 노출
     fetch("/api/me", { credentials: "same-origin" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.user?.name) {
           const avatar = document.getElementById("userAvatar");
           if (avatar) avatar.title = data.user.name;
+        }
+        if (data?.isAdmin) {
+          document.querySelectorAll(".admin-only").forEach(el => {
+            el.style.display = "";
+          });
         }
       })
       .catch(() => {});

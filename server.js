@@ -422,6 +422,51 @@ app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
 app.use("/api/livestock", livestockRoutes({ runPgQuery }));
 app.use("/api/email", emailRoutes({ runPgQuery, ensureAdmin }));
 
+// ------------------------------------------------------------
+// 사용자 활동 로그 조회 (관리자 전용)
+// ------------------------------------------------------------
+app.get("/api/audit-logs", ensureAdmin, async (req, res) => {
+  try {
+    const page        = Math.max(1, parseInt(req.query.page  || "1",  10));
+    const limit       = Math.min(200, Math.max(1, parseInt(req.query.limit || "50", 10)));
+    const offset      = (page - 1) * limit;
+    const resourceType = req.query.resource_type || null;
+    const userUpn     = req.query.user_upn       || null;
+    const dateFrom    = req.query.date_from       || null;
+    const dateTo      = req.query.date_to         || null;
+
+    const conditions = [];
+    const params     = [];
+
+    if (resourceType) { params.push(resourceType); conditions.push(`resource_type = $${params.length}`); }
+    if (userUpn)      { params.push(`%${userUpn}%`); conditions.push(`user_upn ILIKE $${params.length}`); }
+    if (dateFrom)     { params.push(dateFrom); conditions.push(`created_at >= $${params.length}`); }
+    if (dateTo)       { params.push(dateTo);   conditions.push(`created_at <  ($${params.length}::date + interval '1 day')`); }
+
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    const countResult = await runPgQuery(
+      `SELECT COUNT(*) AS total FROM user_activity_logs ${where}`, params
+    );
+    const total = parseInt(countResult.rows[0].total, 10);
+
+    params.push(limit);
+    params.push(offset);
+    const dataResult = await runPgQuery(
+      `SELECT id, created_at, user_upn, user_name, action, resource_type, resource_id, summary
+       FROM user_activity_logs ${where}
+       ORDER BY created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    res.json({ success: true, logs: dataResult.rows, total, page, limit });
+  } catch (err) {
+    console.error("[AuditLog API] 오류:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Switch account: destroy session and return login redirect URL
 app.post("/api/switch-account", ensureAuth, (req, res) => {
   console.log('[SwitchAccount] POST called by', req.session?.user?.preferred_username || 'unknown');
