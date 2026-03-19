@@ -368,10 +368,11 @@ app.get("/api/dashboard/token", ensureAuth, async (req, res) => {
 });
 
 async function getDatabricksDashboardToken() {
-  // Databricks 워크스페이스 OAuth M2M 토큰 발급
-  // aibi-client는 Azure AD 토큰이 아닌 Databricks 워크스페이스 OIDC 토큰이 필요
   const instanceUrl = "https://adb-3997551919284009.9.azuredatabricks.net";
+  const dashboardId = "01f0bba8df9b1c0ebcf5dc38714d79aa";
 
+  // 1단계: M2M 서비스 토큰 발급
+  let serviceToken;
   try {
     const resp = await axios.post(
       `${instanceUrl}/oidc/v1/token`,
@@ -383,13 +384,27 @@ async function getDatabricksDashboardToken() {
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
-
-    const token = resp.data?.access_token;
-    if (!token) throw new Error("No access_token in Databricks OIDC response");
-    console.log("[Dashboard token] Databricks M2M 토큰 발급 성공");
-    return token;
+    serviceToken = resp.data?.access_token;
+    if (!serviceToken) throw new Error("No access_token in Databricks OIDC response");
+    console.log("[Dashboard token] M2M 서비스 토큰 발급 성공");
   } catch (err) {
-    console.error("[Dashboard token] Databricks OIDC 오류:", err.response?.data || err.message);
+    console.error("[Dashboard token] M2M 오류:", err.response?.data || err.message);
+    throw err;
+  }
+
+  // 2단계: 대시보드 전용 임베드 토큰 발급 (dashboard ID 클레임 포함)
+  try {
+    const embedResp = await axios.post(
+      `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/credentials/token`,
+      {},
+      { headers: { Authorization: `Bearer ${serviceToken}` } }
+    );
+    const embedToken = embedResp.data?.token ?? embedResp.data?.access_token;
+    if (!embedToken) throw new Error("임베드 토큰 응답에 token 없음: " + JSON.stringify(embedResp.data));
+    console.log("[Dashboard token] 임베드 토큰 발급 성공");
+    return embedToken;
+  } catch (err) {
+    console.error("[Dashboard token] 임베드 토큰 오류:", err.response?.data || err.message);
     throw err;
   }
 }
