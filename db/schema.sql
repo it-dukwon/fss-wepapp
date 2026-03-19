@@ -148,11 +148,13 @@ CREATE TABLE IF NOT EXISTS public.admin_users (
 CREATE INDEX IF NOT EXISTS admin_users_upn_idx ON public.admin_users (lower(upn));
 
 -- 초기 관리자 계정
-INSERT INTO public.admin_users (upn, name) VALUES
-  ('it.dukwon@gmail.com',                       '덕원(외부)'),
-  ('gm.seo@itdukwongmail.onmicrosoft.com',       '서GM'),
-  ('user01@itdukwongmail.onmicrosoft.com',       'User01')
-ON CONFLICT (upn) DO NOTHING;
+-- INSERT INTO public.admin_users (upn, name) VALUES
+--   ('it.dukwon@gmail.com',                       '덕원(외부)'),
+--   ('gm.seo@itdukwongmail.onmicrosoft.com',       '서GM'),
+--   ('user01@itdukwongmail.onmicrosoft.com',       'User01')
+-- ON CONFLICT (upn) DO NOTHING;
+
+-- SELECT * from PUBLIC.admin_users;
 
 
 -- ────────────────────────────────────────

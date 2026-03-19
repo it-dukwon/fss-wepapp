@@ -1,6 +1,7 @@
 // routes/email-routes.js
 const express = require("express");
 const { sendMail, buildMortalityReportHtml } = require("../utils/mailer");
+const { auditLog } = require("../utils/audit-log");
 const dayjs = require("dayjs");
 const timezone = require("dayjs/plugin/timezone");
 const utc = require("dayjs/plugin/utc");
@@ -50,6 +51,7 @@ module.exports = function emailRoutes({ runPgQuery, ensureAdmin }) {
           note?.trim() || null,
         ]
       );
+      auditLog(req, "INSERT", "email_recipient", result.rows[0].id, `이메일 수신자 등록: ${email.trim()}`);
       res.json({ success: true, data: result.rows[0] });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -75,6 +77,7 @@ module.exports = function emailRoutes({ runPgQuery, ensureAdmin }) {
           id,
         ]
       );
+      auditLog(req, "UPDATE", "email_recipient", id, `이메일 수신자 수정: ${email.trim()}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -86,6 +89,7 @@ module.exports = function emailRoutes({ runPgQuery, ensureAdmin }) {
     try {
       const id = parseInt(req.params.id, 10);
       await runPgQuery(`DELETE FROM email_recipients WHERE id=$1`, [id]);
+      auditLog(req, "DELETE", "email_recipient", id, `이메일 수신자 삭제: id=${id}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -162,6 +166,7 @@ module.exports = function emailRoutes({ runPgQuery, ensureAdmin }) {
         await global.reloadEmailCron();
       }
 
+      auditLog(req, "UPDATE", "email_schedule", null, `이메일 발송 스케줄 변경: ${value}`);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });

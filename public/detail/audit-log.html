@@ -81,6 +81,9 @@
     .badge-DELETE  { background:#fee2e2; color:#991b1b; }
     .badge-START   { background:#d1fae5; color:#065f46; }
     .badge-STOP    { background:#fef3c7; color:#92400e; }
+    .badge-LOGIN   { background:#ede9fe; color:#5b21b6; }
+    .badge-LOGOUT  { background:#f3f4f6; color:#374151; }
+    .badge-VIEW    { background:#fef9c3; color:#854d0e; }
 
     .pagination {
       display: flex;
@@ -132,6 +135,9 @@
           <option value="DELETE">삭제</option>
           <option value="START">DB Start</option>
           <option value="STOP">DB Stop</option>
+          <option value="LOGIN">로그인</option>
+          <option value="LOGOUT">로그아웃</option>
+          <option value="VIEW">페이지 진입</option>
         </select>
       </label>
       <label>
@@ -205,7 +211,7 @@
       currentPage = page;
       const f = getFilters();
       const params = new URLSearchParams({ page, limit });
-      if (f.action)        params.set("resource_type", f.resource_type || "");
+      if (f.action)        params.set("action",        f.action);
       if (f.resource_type) params.set("resource_type", f.resource_type);
       if (f.user_upn)      params.set("user_upn",      f.user_upn);
       if (f.date_from)     params.set("date_from",     f.date_from);
@@ -238,7 +244,7 @@
     }
 
     function actionLabel(action) {
-      const map = { INSERT: "등록", UPDATE: "수정", DELETE: "삭제", START: "DB Start", STOP: "DB Stop" };
+      const map = { INSERT: "등록", UPDATE: "수정", DELETE: "삭제", START: "DB Start", STOP: "DB Stop", LOGIN: "로그인", LOGOUT: "로그아웃", VIEW: "페이지 진입" };
       return map[action] || action;
     }
 
@@ -315,5 +321,6 @@
     loadLogs(1);
   })();
   </script>
+  <script src="/js/page-view-log.js" data-page="활동 로그"></script>
 </body>
 </html>

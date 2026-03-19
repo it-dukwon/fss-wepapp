@@ -1,6 +1,7 @@
 // auth/entraAuth.js (CommonJS)
 const crypto = require("crypto");
 const { ConfidentialClientApplication } = require("@azure/msal-node");
+const { auditLog } = require("../utils/audit-log");
 
 /**
  * Entra ID 로그인 라우터/미들웨어를 app에 장착
@@ -141,6 +142,9 @@ function attachEntraAuth(app) {
 
       delete req.session.entra;
 
+      auditLog(req, "LOGIN", "session", null,
+        `로그인: ${claims.preferred_username || claims.oid}`);
+
       // 로그인 후 이동
       return res.redirect("/"); // 원하는 곳으로 바꿔도 됨 (예: /protected)
     } catch (err) {
@@ -151,6 +155,9 @@ function attachEntraAuth(app) {
 
   // 로그아웃 (세션 제거 + Entra 로그아웃)
   app.get("/logout", (req, res) => {
+    auditLog(req, "LOGOUT", "session", null,
+      `로그아웃: ${req.session?.user?.preferred_username || req.session?.user?.oid || "unknown"}`);
+
     req.session.destroy(() => {
       const logoutUrl =
         `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/logout` +

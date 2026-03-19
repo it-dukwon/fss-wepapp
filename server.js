@@ -446,6 +446,18 @@ app.use("/api/email", emailRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/admins", adminRoutes({ runPgQuery, ensureAdmin, invalidateAdminCache }));
 
 // ------------------------------------------------------------
+// 페이지 진입 로그 (로그인 사용자 전용)
+// ------------------------------------------------------------
+app.post("/api/log/page-view", ensureAuth, (req, res) => {
+  const page = (req.body?.page || "").trim().slice(0, 100);
+  if (page) {
+    const { auditLog } = require("./utils/audit-log");
+    auditLog(req, "VIEW", "page", null, `페이지 진입: ${page}`);
+  }
+  res.json({ success: true });
+});
+
+// ------------------------------------------------------------
 // 사용자 활동 로그 조회 (관리자 전용)
 // ------------------------------------------------------------
 app.get("/api/audit-logs", ensureAdmin, async (req, res) => {
@@ -453,6 +465,7 @@ app.get("/api/audit-logs", ensureAdmin, async (req, res) => {
     const page        = Math.max(1, parseInt(req.query.page  || "1",  10));
     const limit       = Math.min(200, Math.max(1, parseInt(req.query.limit || "50", 10)));
     const offset      = (page - 1) * limit;
+    const action      = req.query.action        || null;
     const resourceType = req.query.resource_type || null;
     const userUpn     = req.query.user_upn       || null;
     const dateFrom    = req.query.date_from       || null;
@@ -461,6 +474,7 @@ app.get("/api/audit-logs", ensureAdmin, async (req, res) => {
     const conditions = [];
     const params     = [];
 
+    if (action)       { params.push(action);       conditions.push(`action = $${params.length}`); }
     if (resourceType) { params.push(resourceType); conditions.push(`resource_type = $${params.length}`); }
     if (userUpn)      { params.push(`%${userUpn}%`); conditions.push(`user_upn ILIKE $${params.length}`); }
     if (dateFrom)     { params.push(dateFrom); conditions.push(`created_at >= $${params.length}`); }
