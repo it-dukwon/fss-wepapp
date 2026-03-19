@@ -373,7 +373,7 @@ async function getDatabricksDashboardToken() {
   const pat = process.env.DATABRICKS_TOKEN;
   if (!pat) throw new Error("DATABRICKS_TOKEN 환경변수가 없습니다");
 
-  // M2M OIDC 토큰 발급 (PAT은 만료된 것으로 판단 - HTML 리다이렉트 반환)
+  // M2M OIDC 토큰 발급
   let m2mToken;
   try {
     const oidcResp = await axios.post(
@@ -382,30 +382,27 @@ async function getDatabricksDashboardToken() {
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     m2mToken = oidcResp.data?.access_token;
-    console.log("[Dashboard token] M2M OIDC 토큰 발급", m2mToken ? "성공" : "실패(token 없음)");
+    if (!m2mToken) throw new Error("M2M OIDC 응답에 access_token 없음");
+    console.log("[Dashboard token] M2M OIDC 토큰 발급 성공");
   } catch (err) {
-    console.log("[Dashboard token] M2M OIDC 발급 실패:", err.response?.status, err.response?.data?.message || err.message);
-    throw new Error("M2M OIDC 토큰 발급 실패: " + err.message);
+    console.log("[Dashboard token] M2M OIDC 발급 실패:", err.response?.status, err.response?.data || err.message);
+    throw err;
   }
 
-  // M2M 토큰으로 embed 엔드포인트 GET 시도
-  const embedCandidates = [
-    `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/published/credentials/token`,
-    `${instanceUrl}/api/2.0/preview/sql/dashboardsv3/${dashboardId}/embed-credentials`,
-  ];
-
-  for (const url of embedCandidates) {
-    try {
-      const resp = await axios.get(url, { headers: { Authorization: `Bearer ${m2mToken}` } });
-      const token = resp.data?.token ?? resp.data?.access_token;
-      if (token) { console.log(`[Dashboard token] 성공(M2M) → ${url}`); return token; }
-      console.log(`[Dashboard token] 응답에 token 없음 (${url}):`, JSON.stringify(resp.data).slice(0, 300));
-    } catch (err) {
-      console.log(`[Dashboard token] 실패 ${err.response?.status} (${url}):`, err.response?.data?.message || err.message);
-    }
+  // M2M 토큰으로 Lakeview embed 토큰 요청 (확인된 유일한 REST API 엔드포인트)
+  try {
+    const resp = await axios.get(
+      `${instanceUrl}/api/2.0/lakeview/dashboards/${dashboardId}/credentials/token`,
+      { headers: { Authorization: `Bearer ${m2mToken}` } }
+    );
+    const token = resp.data?.token ?? resp.data?.access_token;
+    if (token) { console.log("[Dashboard token] 성공(M2M lakeview credentials/token)"); return token; }
+    console.log("[Dashboard token] 응답 전체:", JSON.stringify(resp.data));
+    throw new Error("응답에 token 없음: " + JSON.stringify(resp.data));
+  } catch (err) {
+    console.log("[Dashboard token] lakeview credentials/token 실패:", err.response?.status, JSON.stringify(err.response?.data || err.message));
+    throw err;
   }
-
-  throw new Error("모든 embed 토큰 엔드포인트 실패 - 로그를 확인하세요");
 }
 
 app.use("/api/farms", farmsRoutes({ runPgQuery }));
