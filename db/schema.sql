@@ -134,7 +134,29 @@ CREATE TABLE IF NOT EXISTS public.livestock_events (
 
 
 -- ────────────────────────────────────────
--- 6. 사용자 활동 로그 (user_activity_logs)
+-- 6. 관리자 (admin_users)
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.admin_users (
+  id         SERIAL PRIMARY KEY,
+  upn        VARCHAR(255) NOT NULL,  -- Azure AD UPN (이메일)
+  name       VARCHAR(255),           -- 표시 이름 (선택)
+  enabled    BOOLEAN      NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  CONSTRAINT admin_users_upn_key UNIQUE (upn)
+);
+
+CREATE INDEX IF NOT EXISTS admin_users_upn_idx ON public.admin_users (lower(upn));
+
+-- 초기 관리자 계정
+INSERT INTO public.admin_users (upn, name) VALUES
+  ('it.dukwon@gmail.com',                       '덕원(외부)'),
+  ('gm.seo@itdukwongmail.onmicrosoft.com',       '서GM'),
+  ('user01@itdukwongmail.onmicrosoft.com',       'User01')
+ON CONFLICT (upn) DO NOTHING;
+
+
+-- ────────────────────────────────────────
+-- 7. 사용자 활동 로그 (user_activity_logs)
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.user_activity_logs (
   id            BIGSERIAL PRIMARY KEY,

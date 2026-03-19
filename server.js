@@ -23,6 +23,7 @@ const boardRoutes = require("./routes/board-routes");
 const azurePgRoutes = require("./routes/azure-postgres-routes");
 const livestockRoutes = require("./routes/livestock-routes");
 const emailRoutes = require("./routes/email-routes");
+const adminRoutes = require("./routes/admin-routes");
 const cron = require("node-cron");
 const { sendMail, buildMortalityReportHtml } = require("./utils/mailer");
 const { fetchMortalityReport, getEnabledRecipients } = require("./routes/email-routes");
@@ -55,23 +56,44 @@ app.use(
 // Entra 라우트 등록 (/login, /auth/login, /auth/redirect, /logout)
 const { ensureAuth } = attachEntraAuth(app);
 
-// ADMIN_UPNS 환경변수 → Set으로 변환
-const ADMIN_UPNS = new Set(
-  (process.env.ADMIN_UPNS || "")
-    .split(",")
-    .map(v => v.trim().toLowerCase())
-    .filter(Boolean)
-);
+// ── 관리자 캐시 (DB에서 읽어 1분간 유지) ──────────────────────
+let _adminCache = null;
+let _adminCacheExpiry = 0;
 
-function isAdminUser(req) {
-  const upn = req.session?.user?.preferred_username;
-  if (!upn) return false;
-  return ADMIN_UPNS.has(String(upn).toLowerCase());
+// admin-routes에서 변경 후 캐시 무효화용
+function invalidateAdminCache() {
+  _adminCache = null;
+  _adminCacheExpiry = 0;
 }
 
-function ensureAdmin(req, res, next) {
+async function getAdminUpns() {
+  const now = Date.now();
+  if (_adminCache && now < _adminCacheExpiry) return _adminCache;
+  try {
+    const r = await runPgQuery(`SELECT upn FROM admin_users WHERE enabled = true`);
+    _adminCache = new Set(r.rows.map(row => row.upn.toLowerCase()));
+    _adminCacheExpiry = now + 60 * 1000; // 1분 캐시
+    return _adminCache;
+  } catch (err) {
+    // DB 장애 시 환경변수 폴백
+    console.error("[AdminCache] DB 조회 실패, 환경변수 폴백:", err.message);
+    return new Set(
+      (process.env.ADMIN_UPNS || "")
+        .split(",").map(v => v.trim().toLowerCase()).filter(Boolean)
+    );
+  }
+}
+
+async function isAdminUser(req) {
+  const upn = req.session?.user?.preferred_username;
+  if (!upn) return false;
+  const admins = await getAdminUpns();
+  return admins.has(String(upn).toLowerCase());
+}
+
+async function ensureAdmin(req, res, next) {
   if (!req.session?.user) return res.status(401).json({ error: "Unauthorized" });
-  if (!isAdminUser(req)) return res.status(403).json({ error: "Forbidden" });
+  if (!await isAdminUser(req)) return res.status(403).json({ error: "Forbidden" });
   next();
 }
 
@@ -120,12 +142,12 @@ app.use(express.urlencoded({ extended: false }));
 // ------------------------------------------------------------
 // 로그인 상태 확인용 (예외: /api 보호 전에 둬야 함)
 // ------------------------------------------------------------
-app.get("/api/me", (req, res) => {
+app.get("/api/me", async (req, res) => {
   if (req.session && req.session.user) {
     return res.json({
       authenticated: true,
       user: req.session.user,
-      isAdmin: isAdminUser(req),
+      isAdmin: await isAdminUser(req),
     });
   }
   return res.status(401).json({ authenticated: false, isAdmin: false });
@@ -421,6 +443,7 @@ app.use("/api/board", boardRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
 app.use("/api/livestock", livestockRoutes({ runPgQuery }));
 app.use("/api/email", emailRoutes({ runPgQuery, ensureAdmin }));
+app.use("/api/admins", adminRoutes({ runPgQuery, ensureAdmin, invalidateAdminCache }));
 
 // ------------------------------------------------------------
 // 사용자 활동 로그 조회 (관리자 전용)
