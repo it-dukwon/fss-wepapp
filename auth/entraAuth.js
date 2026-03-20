@@ -55,26 +55,119 @@ function attachEntraAuth(app) {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>로그인</title>
+  <title>덕원농장 관리시스템 — 로그인</title>
   <style>
-    body{font-family:system-ui,Segoe UI,Apple SD Gothic Neo,Malgun Gothic,sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
-    .card{border:1px solid #ddd;border-radius:14px;padding:20px}
-    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #333;text-decoration:none;color:#111}
-    .btn.primary{background:#111;color:#fff}
-    pre{background:#f6f6f6;padding:12px;border-radius:10px;overflow:auto}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #e3f2fd 100%);
+    }
+    .login-wrap {
+      width: 100%;
+      max-width: 400px;
+      padding: 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 48px 40px 40px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+      text-align: center;
+    }
+    .logo {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+    .brand {
+      font-size: 22px;
+      font-weight: 700;
+      color: #2e7d32;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 36px;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 0 0 28px;
+    }
+    .already {
+      font-size: 14px;
+      color: #444;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .already strong { color: #2e7d32; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    }
+    .btn-ms {
+      background: #2563eb;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(37,99,235,0.25);
+    }
+    .btn-ms:hover { background: #1d4ed8; box-shadow: 0 4px 16px rgba(37,99,235,0.35); transform: translateY(-1px); }
+    .btn-ms:active { transform: translateY(0); }
+    .btn-ms svg { flex-shrink: 0; }
+    .btn-outline {
+      background: transparent;
+      color: #555;
+      border: 1px solid #ddd;
+      margin-top: 10px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .btn-outline:hover { background: #f7f7f7; }
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #bbb;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>덕원농장 관리 시스템 로그인</h1>
-    ${
-      user
-        ? `<p>이미 로그인됨: <b>${escapeHtml(user.name || user.preferred_username || user.oid)}</b></p>
-           <p><a class="btn" href="/protected">보호된 페이지</a> <a class="btn" href="/logout">로그아웃</a></p>
-           <pre>${escapeHtml(JSON.stringify(user, null, 2))}</pre>`
-        : `<p><a class="btn primary" href="/auth/login">Microsoft로 로그인</a></p>`
-    }
-    <p style="color:#666">Redirect URI: ${escapeHtml(ENTRA_REDIRECT_URI || "")}</p>
+  <div class="login-wrap">
+    <div class="card">
+      <div class="logo">🌾</div>
+      <div class="brand">덕원농장</div>
+      <div class="subtitle">관리시스템</div>
+      <hr class="divider"/>
+      ${
+        user
+          ? `<p class="already">이미 로그인되어 있습니다.<br/><strong>${escapeHtml(user.name || user.preferred_username || "")}</strong></p>
+             <a class="btn btn-ms" href="/">홈으로 이동</a>
+             <a class="btn btn-outline" href="/logout">다른 계정으로 로그인</a>`
+          : `<a class="btn btn-ms" href="/auth/login">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 21 21">
+                 <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                 <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                 <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                 <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+               </svg>
+               Microsoft 계정으로 로그인
+             </a>`
+      }
+      <div class="footer">조직 Microsoft 계정으로만 접근 가능합니다.</div>
+    </div>
   </div>
 </body>
 </html>`);

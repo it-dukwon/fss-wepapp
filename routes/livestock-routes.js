@@ -159,35 +159,29 @@ module.exports = function livestockRoutes({ runPgQuery }) {
     }
   });
 
-  // 이벤트 등록 (같은 날짜+뱃지면 UPSERT)
+  // 이벤트 등록 (로그 방식 — 매 제출마다 새 행 추가, 통계는 SUM으로 집계)
   // POST /api/livestock/events
   router.post("/events", async (req, res) => {
     try {
       const { batch_id, event_date, transfer_in, deaths, culled, shipped, note } = req.body;
       if (!batch_id || !event_date) return res.status(400).json({ error: "batch_id and event_date are required" });
 
+      const ti = Number(transfer_in) || 0;
+      const d  = Number(deaths)      || 0;
+      const c  = Number(culled)      || 0;
+      const s  = Number(shipped)     || 0;
+      if (ti === 0 && d === 0 && c === 0 && s === 0) {
+        return res.status(400).json({ error: "하나 이상의 두수를 입력하세요." });
+      }
+
       const result = await runPgQuery(
         `INSERT INTO livestock_events (batch_id, event_date, transfer_in, deaths, culled, shipped, note)
          VALUES ($1,$2,$3,$4,$5,$6,$7)
-         ON CONFLICT (batch_id, event_date)
-         DO UPDATE SET
-           transfer_in = EXCLUDED.transfer_in,
-           deaths      = EXCLUDED.deaths,
-           culled      = EXCLUDED.culled,
-           shipped     = EXCLUDED.shipped,
-           note        = EXCLUDED.note
          RETURNING event_id`,
-        [
-          Number(batch_id),
-          event_date,
-          Number(transfer_in) || 0,
-          Number(deaths) || 0,
-          Number(culled) || 0,
-          Number(shipped) || 0,
-          note || null,
-        ]
+        [Number(batch_id), event_date, ti, d, c, s, note || null]
       );
-      auditLog(req, "INSERT", "livestock_event", result.rows[0].event_id, `이벤트 등록/수정: batch_id=${batch_id}, 날짜=${event_date}`);
+      auditLog(req, "INSERT", "livestock_event", result.rows[0].event_id,
+        `이벤트 등록: batch_id=${batch_id}, 날짜=${event_date}, 전입=${ti}, 폐사=${d}, 도태=${c}, 출하=${s}`);
       res.json({ success: true, event_id: result.rows[0].event_id });
     } catch (err) {
       console.error("Create event error:", err);

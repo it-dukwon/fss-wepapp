@@ -128,8 +128,7 @@ CREATE TABLE IF NOT EXISTS public.livestock_events (
   note        TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT livestock_events_pkey                    PRIMARY KEY (event_id),
-  CONSTRAINT livestock_events_batch_id_fkey           FOREIGN KEY (batch_id) REFERENCES livestock_batches(batch_id) ON DELETE CASCADE,
-  CONSTRAINT livestock_events_batch_id_event_date_key UNIQUE (batch_id, event_date)
+  CONSTRAINT livestock_events_batch_id_fkey           FOREIGN KEY (batch_id) REFERENCES livestock_batches(batch_id) ON DELETE CASCADE
 );
 
 
