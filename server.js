@@ -26,6 +26,7 @@ const livestockRoutes = require("./routes/livestock-routes");
 const emailRoutes = require("./routes/email-routes");
 const adminRoutes = require("./routes/admin-routes");
 const genieRoutes = require("./routes/genie-routes");
+const claudeRoutes = require("./routes/claude-routes");
 const cron = require("node-cron");
 const { sendMail, buildMortalityReportHtml } = require("./utils/mailer");
 const { fetchMortalityReport, getEnabledRecipients } = require("./routes/email-routes");
@@ -460,6 +461,7 @@ app.use("/api/livestock", livestockRoutes({ runPgQuery }));
 app.use("/api/email", emailRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/admins", adminRoutes({ runPgQuery, ensureAdmin, invalidateAdminCache }));
 app.use("/api/genie", genieRoutes());
+app.use("/api/claude", claudeRoutes());
 
 // ------------------------------------------------------------
 // 페이지 진입 로그 (로그인 사용자 전용)

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Claude AI 어시스턴트</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .claude-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+
+    .chat-history {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 200px;
+      margin-bottom: 16px;
+    }
+
+    .chat-msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 85%;
+    }
+    .chat-msg.user   { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.claude { align-self: flex-start; align-items: flex-start; }
+
+    .chat-label {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+    .chat-msg.user   .chat-bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 3px; white-space: pre-wrap; }
+    .chat-msg.claude .chat-bubble { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 3px; }
+
+    /* 마크다운 스타일 */
+    .chat-bubble h1, .chat-bubble h2, .chat-bubble h3 {
+      margin: 10px 0 4px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .chat-bubble h1 { font-size: 1.1rem; }
+    .chat-bubble h2 { font-size: 1rem; }
+    .chat-bubble h3 { font-size: 0.93rem; }
+    .chat-bubble p  { margin: 4px 0; }
+    .chat-bubble ul, .chat-bubble ol { margin: 4px 0; padding-left: 18px; }
+    .chat-bubble li { margin: 2px 0; }
+    .chat-bubble code {
+      background: #e2e8f0;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.82rem;
+      font-family: 'Courier New', monospace;
+    }
+    .chat-bubble pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      overflow-x: auto;
+      margin: 6px 0;
+    }
+    .chat-bubble pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+      font-size: 0.8rem;
+    }
+    .chat-bubble strong { font-weight: 700; }
+    .chat-bubble em { font-style: italic; }
+    .chat-bubble blockquote {
+      border-left: 3px solid #cbd5e1;
+      margin: 4px 0;
+      padding-left: 10px;
+      color: #64748b;
+    }
+    .chat-bubble hr { border: none; border-top: 1px solid #e2e8f0; margin: 8px 0; }
+
+    /* 입력 영역 */
+    .chat-input-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .chat-input-wrap textarea {
+      flex: 1;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: none;
+      min-height: 44px;
+      max-height: 140px;
+      overflow-y: auto;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+    .chat-input-wrap textarea:focus {
+      outline: none;
+      border-color: #d97706;
+    }
+    .btn-send {
+      background: #d97706;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      height: 44px;
+      transition: background 0.15s;
+    }
+    .btn-send:hover { background: #b45309; }
+    .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .btn-new-chat {
+      background: none;
+      border: 1.5px solid #cbd5e1;
+      color: #64748b;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-new-chat:hover { border-color: #d97706; color: #d97706; }
+
+    /* 토큰 표시 */
+    .token-info {
+      font-size: 0.7rem;
+      color: #cbd5e1;
+      margin-top: 3px;
+      text-align: right;
+    }
+
+    /* 로딩 */
+    .typing-dots span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #94a3b8;
+      margin: 0 2px;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    .claude-intro {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      padding: 32px 0 8px;
+    }
+    .claude-intro i { font-size: 2rem; color: #f59e0b; margin-bottom: 8px; display: block; }
+
+    /* 빠른 질문 예시 */
+    .quick-questions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .quick-q {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-q:hover { border-color: #d97706; color: #d97706; background: #fffbeb; }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">Claude AI 어시스턴트</h2>
+  </header>
+
+  <div class="claude-wrap">
+    <div class="ls-card" style="padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <span style="font-size:0.85rem;color:#64748b;">
+          <i class="fa-solid fa-robot" style="color:#d97706;"></i>
+          Anthropic Claude에게 무엇이든 물어보세요.
+        </span>
+        <button class="btn-new-chat" id="btnNewChat"><i class="fa-solid fa-plus"></i> 새 대화</button>
+      </div>
+
+      <div class="chat-history" id="chatHistory">
+        <div class="claude-intro" id="introMsg">
+          <i class="fa-solid fa-robot"></i>
+          농장 운영, 데이터 분석, 업무 관련 무엇이든 질문하세요.
+          <div class="quick-questions">
+            <span class="quick-q" data-q="폐사율을 줄이는 방법을 알려줘">폐사율 감소 방법</span>
+            <span class="quick-q" data-q="한우 사육 시 주의사항을 알려줘">한우 사육 주의사항</span>
+            <span class="quick-q" data-q="농장 운영 비용 절감 방법을 알려줘">운영 비용 절감</span>
+            <span class="quick-q" data-q="축산 관련 정부 지원금을 알려줘">정부 지원금 안내</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-wrap">
+        <textarea id="chatInput" placeholder="질문을 입력하세요... (Enter 전송, Shift+Enter 줄바꿈)" rows="1"></textarea>
+        <button class="btn-send" id="btnSend"><i class="fa-solid fa-paper-plane"></i> 전송</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 간단한 마크다운 → HTML 변환
+    function mdToHtml(text) {
+      return text
+        // 코드블록 (``` ... ```)
+        .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
+          `<pre><code>${escHtml(code.trim())}</code></pre>`)
+        // 인라인 코드
+        .replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`)
+        // 헤더
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        // HR
+        .replace(/^---$/gm, '<hr>')
+        // Bold / Italic
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Blockquote
+        .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+        // 순서 없는 목록
+        .replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+        // 순서 있는 목록
+        .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+        // 줄바꿈 → <br> (단 블록 태그 전후 제외)
+        .replace(/\n(?!<(?:h[1-3]|ul|ol|li|pre|blockquote|hr))/g, '<br>');
+    }
+
+    function escHtml(str) {
+      return str.replace(/[&<>"']/g, m =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+    }
+
+    let history = [];
+    let sending = false;
+
+    const chatHistory = document.getElementById("chatHistory");
+    const chatInput   = document.getElementById("chatInput");
+    const btnSend     = document.getElementById("btnSend");
+    const btnNewChat  = document.getElementById("btnNewChat");
+
+    // 빠른 질문
+    document.querySelectorAll(".quick-q").forEach(el => {
+      el.addEventListener("click", () => {
+        chatInput.value = el.dataset.q;
+        chatInput.dispatchEvent(new Event("input"));
+        chatInput.focus();
+      });
+    });
+
+    // 자동 높이
+    chatInput.addEventListener("input", () => {
+      chatInput.style.height = "auto";
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + "px";
+    });
+
+    chatInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!sending) sendMessage();
+      }
+    });
+
+    btnSend.addEventListener("click", () => { if (!sending) sendMessage(); });
+
+    btnNewChat.addEventListener("click", () => {
+      history = [];
+      chatHistory.innerHTML = `
+        <div class="claude-intro" id="introMsg">
+          <i class="fa-solid fa-robot"></i>
+          농장 운영, 데이터 분석, 업무 관련 무엇이든 질문하세요.
+          <div class="quick-questions">
+            <span class="quick-q" data-q="폐사율을 줄이는 방법을 알려줘">폐사율 감소 방법</span>
+            <span class="quick-q" data-q="한우 사육 시 주의사항을 알려줘">한우 사육 주의사항</span>
+            <span class="quick-q" data-q="농장 운영 비용 절감 방법을 알려줘">운영 비용 절감</span>
+            <span class="quick-q" data-q="축산 관련 정부 지원금을 알려줘">정부 지원금 안내</span>
+          </div>
+        </div>`;
+      document.querySelectorAll(".quick-q").forEach(el => {
+        el.addEventListener("click", () => {
+          chatInput.value = el.dataset.q;
+          chatInput.dispatchEvent(new Event("input"));
+          chatInput.focus();
+        });
+      });
+      chatInput.value = "";
+      chatInput.style.height = "auto";
+      chatInput.focus();
+    });
+
+    function appendMsg(role, content, tokens) {
+      document.getElementById("introMsg")?.remove();
+
+      const wrap = document.createElement("div");
+      wrap.className = `chat-msg ${role}`;
+
+      const label = document.createElement("div");
+      label.className = "chat-label";
+      label.textContent = role === "user" ? "나" : "Claude";
+
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble";
+
+      if (role === "user") {
+        bubble.textContent = content;
+      } else if (typeof content === "string") {
+        bubble.innerHTML = mdToHtml(content);
+      } else {
+        bubble.appendChild(content);
+      }
+
+      wrap.appendChild(label);
+      wrap.appendChild(bubble);
+
+      if (tokens && role === "claude") {
+        const ti = document.createElement("div");
+        ti.className = "token-info";
+        ti.textContent = `입력 ${tokens.input.toLocaleString()} / 출력 ${tokens.output.toLocaleString()} 토큰`;
+        wrap.appendChild(ti);
+      }
+
+      chatHistory.appendChild(wrap);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      return wrap;
+    }
+
+    function appendTyping() {
+      const wrap = appendMsg("claude", "");
+      wrap.querySelector(".chat-bubble").innerHTML =
+        `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+      return wrap;
+    }
+
+    async function sendMessage() {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      sending = true;
+      btnSend.disabled = true;
+      chatInput.disabled = true;
+
+      appendMsg("user", message);
+      chatInput.value = "";
+      chatInput.style.height = "auto";
+
+      const typingEl = appendTyping();
+
+      try {
+        const res = await fetch("/api/claude/chat", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, history }),
+        });
+
+        const data = await res.json();
+        typingEl.remove();
+
+        if (!res.ok || !data.success) {
+          appendMsg("claude", `오류: ${data.error || "알 수 없는 오류"}`);
+        } else {
+          // 대화 히스토리 유지
+          history.push({ role: "user", content: message });
+          history.push({ role: "assistant", content: data.answer });
+
+          appendMsg("claude", data.answer, {
+            input: data.input_tokens || 0,
+            output: data.output_tokens || 0,
+          });
+        }
+      } catch (err) {
+        typingEl.remove();
+        appendMsg("claude", `네트워크 오류: ${err.message}`);
+      } finally {
+        sending = false;
+        btnSend.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+      }
+    }
+  </script>
+  <script src="/js/page-view-log.js" data-page="Claude AI 어시스턴트"></script>
+</body>
+</html>

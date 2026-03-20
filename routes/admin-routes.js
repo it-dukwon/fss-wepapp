@@ -96,6 +96,75 @@ module.exports = function adminRoutes({ runPgQuery, ensureAdmin, invalidateAdmin
     }
   });
 
+  // Notion 동기화 (admin_users → Notion "22. 관리자 리스트")
+  router.post("/sync-notion", ensureAdmin, async (req, res) => {
+    const NOTION_TOKEN = process.env.NOTION_API_TOKEN;
+    const NOTION_DB_ID = "2dd11794-eab5-801b-bb2c-f904cc44adb2";
+
+    if (!NOTION_TOKEN) {
+      return res.status(500).json({ error: "NOTION_API_TOKEN 환경변수 없음" });
+    }
+
+    async function notionApi(method, path, body) {
+      const https = require("https");
+      const data = body ? JSON.stringify(body) : null;
+      return new Promise((resolve, reject) => {
+        const r = https.request({
+          hostname: "api.notion.com", path: `/v1${path}`, method,
+          headers: {
+            Authorization: `Bearer ${NOTION_TOKEN}`,
+            "Content-Type": "application/json",
+            "Notion-Version": "2022-06-28",
+            ...(data ? { "Content-Length": Buffer.byteLength(data) } : {}),
+          },
+        }, (resp) => {
+          let raw = "";
+          resp.on("data", (c) => (raw += c));
+          resp.on("end", () => resolve({ status: resp.statusCode, body: JSON.parse(raw) }));
+        });
+        r.on("error", reject);
+        if (data) r.write(data);
+        r.end();
+      });
+    }
+
+    try {
+      // DB 조회
+      const { rows: admins } = await runPgQuery(
+        `SELECT upn, name, enabled, created_at FROM admin_users ORDER BY id`, []
+      );
+
+      // Notion 기존 항목 조회 (UPN → page_id 맵)
+      const existing = await notionApi("POST", `/databases/${NOTION_DB_ID}/query`, { page_size: 100 });
+      const notionMap = {};
+      for (const page of existing.body.results || []) {
+        const upn = page.properties?.UPN?.email;
+        if (upn) notionMap[upn] = page.id;
+      }
+
+      let created = 0, updated = 0;
+      for (const admin of admins) {
+        const props = {
+          이름:   { title: [{ text: { content: admin.name || admin.upn } }] },
+          UPN:    { email: admin.upn },
+          활성화:  { checkbox: admin.enabled },
+          등록일:  { date: { start: new Date(admin.created_at).toISOString().split("T")[0] } },
+        };
+        if (notionMap[admin.upn]) {
+          await notionApi("PATCH", `/pages/${notionMap[admin.upn]}`, { properties: props });
+          updated++;
+        } else {
+          await notionApi("POST", "/pages", { parent: { database_id: NOTION_DB_ID }, properties: props });
+          created++;
+        }
+      }
+
+      res.json({ success: true, created, updated, total: admins.length });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // 삭제
   router.delete("/:id", ensureAdmin, async (req, res) => {
     try {
