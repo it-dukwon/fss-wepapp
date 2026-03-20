@@ -13,6 +13,13 @@
   <script src="/js/auth-gate.js"></script>
 </head>
 <body>
+  <!-- 한줄공지 배너 -->
+  <div id="notice-banner" style="display:none;background:#c0392b;color:#fff;text-align:center;padding:9px 16px;font-size:0.9rem;font-weight:600;letter-spacing:0.01em;position:relative;">
+    <span id="notice-banner-text"></span>
+    <button onclick="document.getElementById('notice-banner').style.display='none'"
+      style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;opacity:0.8;" title="닫기">✕</button>
+  </div>
+
   <div class="page-bg">
     <main class="shell">
 
@@ -161,6 +168,17 @@
   </div>
 
   <script>
+    // 한줄공지 배너
+    fetch("/api/notice-banners/active", { credentials: "same-origin" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.banner?.message) {
+          document.getElementById("notice-banner-text").textContent = data.banner.message;
+          document.getElementById("notice-banner").style.display = "";
+        }
+      })
+      .catch(() => {});
+
     // 로그아웃
     document.getElementById("logoutBtn")?.addEventListener("click", () => {
       window.location.href = "/logout";

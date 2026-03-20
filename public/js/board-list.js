@@ -1,6 +1,17 @@
 // public/js/board-list.js
 let me = { authenticated: false, isAdmin: false, user: null };
 
+// ── 탭 전환 ──────────────────────────────────────
+document.querySelectorAll(".ls-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".ls-tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".ls-tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`tab-${btn.dataset.tab}`)?.classList.add("active");
+    if (btn.dataset.tab === "banner") loadBanners();
+  });
+});
+
 async function fetchMe() {
   const r = await fetch("/api/me", { credentials: "include" });
   if (!r.ok) return { authenticated: false, isAdmin: false };
@@ -134,6 +145,89 @@ async function createPost() {
   await loadList();
 }
 
+// ── 한줄공지 ─────────────────────────────────────
+function fmtDT(s) {
+  if (!s) return "-";
+  const d = new Date(s);
+  if (!Number.isFinite(d.getTime())) return "-";
+  return d.toLocaleString("ko-KR", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+function isBannerActive(from, to) {
+  const now = Date.now();
+  return new Date(from).getTime() <= now && now <= new Date(to).getTime();
+}
+
+async function loadBanners() {
+  const tbody = document.getElementById("banner-rows");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="6" class="ls-empty">로딩 중...</td></tr>`;
+  try {
+    const r = await fetch("/api/notice-banners", { credentials: "include" });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error);
+    if (!data.banners.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="ls-empty">등록된 한줄공지 없음</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.banners.map(b => {
+      const active = isBannerActive(b.display_from, b.display_to);
+      const statusBadge = active
+        ? `<span style="color:#fff;background:#d9534f;padding:2px 8px;border-radius:20px;font-size:0.78rem;">노출 중</span>`
+        : `<span style="color:#888;background:#eee;padding:2px 8px;border-radius:20px;font-size:0.78rem;">비노출</span>`;
+      return `<tr>
+        <td>${b.id}</td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.message}</td>
+        <td>${fmtDT(b.display_from)}</td>
+        <td>${fmtDT(b.display_to)}</td>
+        <td>${statusBadge}</td>
+        <td data-admin-only style="display:${me.isAdmin ? "" : "none"};">
+          <button class="ls-btn ls-btn-red" style="padding:3px 8px;" onclick="deleteBanner(${b.id})">삭제</button>
+        </td>
+      </tr>`;
+    }).join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+  }
+}
+
+async function createBanner() {
+  const message = (document.getElementById("bnMessage")?.value || "").trim();
+  const from    = document.getElementById("bnFrom")?.value;
+  const to      = document.getElementById("bnTo")?.value;
+
+  if (!message) { Swal.fire({ icon: "warning", title: "공지 내용을 입력하세요" }); return; }
+  if (!from)    { Swal.fire({ icon: "warning", title: "노출 시작일시를 입력하세요" }); return; }
+  if (!to)      { Swal.fire({ icon: "warning", title: "노출 종료일시를 입력하세요" }); return; }
+
+  const r = await fetch("/api/notice-banners", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, display_from: from, display_to: to }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { Swal.fire({ icon: "error", title: "등록 실패", text: data.error }); return; }
+
+  document.getElementById("bnMessage").value = "";
+  Swal.fire({ toast: true, position: "top-end", icon: "success", title: "등록됐습니다", timer: 1800, showConfirmButton: false });
+  await loadBanners();
+}
+
+async function deleteBanner(id) {
+  const ok = await Swal.fire({
+    title: "삭제할까요?", icon: "warning",
+    showCancelButton: true, confirmButtonText: "삭제", cancelButtonText: "취소",
+    confirmButtonColor: "#d9534f",
+  });
+  if (!ok.isConfirmed) return;
+  const r = await fetch(`/api/notice-banners/${id}`, { method: "DELETE", credentials: "include" });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { Swal.fire({ icon: "error", title: "삭제 실패", text: data.error }); return; }
+  Swal.fire({ toast: true, position: "top-end", icon: "success", title: "삭제됐습니다", timer: 1500, showConfirmButton: false });
+  await loadBanners();
+}
+
 (async function init() {
   me = await fetchMe();
 
@@ -148,6 +242,19 @@ async function createPost() {
 
   const btnCreate = document.getElementById("btnCreate");
   if (btnCreate) btnCreate.onclick = createPost;
+
+  // 한줄공지 등록 버튼
+  const btnBannerCreate = document.getElementById("btnBannerCreate");
+  if (btnBannerCreate) btnBannerCreate.onclick = createBanner;
+
+  // 한줄공지 기본 날짜: from 오늘 00:00, to 오늘 23:59
+  const today = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const dateStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  const bnFrom = document.getElementById("bnFrom");
+  const bnTo   = document.getElementById("bnTo");
+  if (bnFrom) bnFrom.value = `${dateStr}T00:00`;
+  if (bnTo)   bnTo.value   = `${dateStr}T23:59`;
 
   await loadList();
 })();

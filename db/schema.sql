@@ -66,6 +66,21 @@ CREATE INDEX IF NOT EXISTS idx_board_posts_created_at ON board_posts(created_at 
 
 
 -- ────────────────────────────────────────
+-- 2-2. 한줄공지 (notice_banners)
+-- ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.notice_banners (
+  id           SERIAL PRIMARY KEY,
+  message      TEXT        NOT NULL,
+  display_from TIMESTAMPTZ NOT NULL,
+  display_to   TIMESTAMPTZ NOT NULL,
+  created_by   VARCHAR(255),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notice_banners_period ON notice_banners(display_from, display_to);
+
+
+-- ────────────────────────────────────────
 -- 3. 앱 설정 (key-value)
 -- ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.app_settings (

@@ -15,48 +15,102 @@
     <h2 class="detail-title">공지사항</h2>
   </header>
 
-  <!-- 관리자 글쓰기 폼 -->
-  <div class="ls-card" id="adminFormCard" data-admin-only style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h3 class="ls-section-title" style="margin:0;">공지 등록</h3>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span id="createMsg" style="font-size:0.85rem;color:#555;"></span>
-        <button class="ls-btn ls-btn-primary" id="btnCreate"><i class="fa-solid fa-plus"></i> 등록</button>
+  <!-- 탭 네비게이션 -->
+  <div class="ls-tabs">
+    <button class="ls-tab-btn active" data-tab="board">공지사항</button>
+    <button class="ls-tab-btn" data-tab="banner" data-admin-only style="display:none;">한줄공지</button>
+  </div>
+
+  <!-- ── 탭 1: 공지사항 ── -->
+  <div id="tab-board" class="ls-tab-content active">
+    <!-- 관리자 글쓰기 폼 -->
+    <div class="ls-card" id="adminFormCard" data-admin-only style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">공지 등록</h3>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="createMsg" style="font-size:0.85rem;color:#555;"></span>
+          <button class="ls-btn ls-btn-primary" id="btnCreate"><i class="fa-solid fa-plus"></i> 등록</button>
+        </div>
+      </div>
+      <div class="ls-form-grid" style="grid-template-columns:1fr;">
+        <div class="ls-form-group">
+          <label>제목 *</label>
+          <input type="text" id="newTitle" placeholder="제목을 입력하세요" />
+        </div>
+        <div class="ls-form-group">
+          <label>내용 *</label>
+          <textarea id="newBody" rows="5"
+            style="width:100%;box-sizing:border-box;resize:vertical;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;font-family:inherit;line-height:1.6;"></textarea>
+        </div>
       </div>
     </div>
-    <div class="ls-form-grid" style="grid-template-columns:1fr;">
-      <div class="ls-form-group">
-        <label>제목 *</label>
-        <input type="text" id="newTitle" placeholder="제목을 입력하세요" />
+
+    <!-- 목록 -->
+    <div class="ls-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">공지사항 목록</h3>
+        <span id="meBox" style="font-size:0.82rem;color:#888;"></span>
       </div>
-      <div class="ls-form-group">
-        <label>내용 *</label>
-        <textarea id="newBody" rows="5"
-          style="width:100%;box-sizing:border-box;resize:vertical;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;font-family:inherit;line-height:1.6;"></textarea>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th class="col-no">번호</th>
+              <th>제목</th>
+              <th class="col-date">등록/수정일</th>
+              <th class="col-admin" data-admin-only style="display:none;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="4" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- 목록 -->
-  <div class="ls-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h3 class="ls-section-title" style="margin:0;">공지사항 목록</h3>
-      <span id="meBox" style="font-size:0.82rem;color:#888;"></span>
+  <!-- ── 탭 2: 한줄공지 (관리자 전용) ── -->
+  <div id="tab-banner" class="ls-tab-content">
+    <div class="ls-card" data-admin-only style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">한줄공지 등록</h3>
+        <button class="ls-btn ls-btn-primary" id="btnBannerCreate"><i class="fa-solid fa-plus"></i> 등록</button>
+      </div>
+      <div class="ls-form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="ls-form-group" style="grid-column:span 3;">
+          <label>공지 내용 * <small style="color:#888;">(한 줄)</small></label>
+          <input type="text" id="bnMessage" placeholder="메인 화면 상단에 표시될 공지 내용을 입력하세요" />
+        </div>
+        <div class="ls-form-group">
+          <label>노출 시작일시 *</label>
+          <input type="datetime-local" id="bnFrom" />
+        </div>
+        <div class="ls-form-group">
+          <label>노출 종료일시 *</label>
+          <input type="datetime-local" id="bnTo" />
+        </div>
+      </div>
     </div>
-    <div class="ls-table-wrap">
-      <table class="ls-table">
-        <thead>
-          <tr>
-            <th class="col-no">번호</th>
-            <th>제목</th>
-            <th class="col-date">등록/수정일</th>
-            <th class="col-admin" data-admin-only style="display:none;">관리</th>
-          </tr>
-        </thead>
-        <tbody id="rows">
-          <tr><td colspan="4" class="ls-empty">로딩 중...</td></tr>
-        </tbody>
-      </table>
+
+    <div class="ls-card">
+      <h3 class="ls-section-title">한줄공지 목록</h3>
+      <div class="ls-table-wrap">
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>공지 내용</th>
+              <th>노출 시작</th>
+              <th>노출 종료</th>
+              <th>상태</th>
+              <th data-admin-only style="display:none;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="banner-rows">
+            <tr><td colspan="6" class="ls-empty">로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
