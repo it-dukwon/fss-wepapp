@@ -416,6 +416,10 @@ body{
 .content{
   padding: 26px 28px 34px;
   flex: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 18px;
 }
 
 /* Two quick cards row */
@@ -452,6 +456,9 @@ body{
 .quick-link span{
   font-weight:700;
   font-size: 14px;
+  text-align: center;
+  word-break: keep-all;
+  line-height: 1.3;
 }
 .quick-link:hover{
   transform: translateY(-3px);
@@ -501,7 +508,8 @@ body{
 
 /* ── 메뉴 그룹 섹션 ── */
 .menu-group{
-  margin-bottom: 24px;
+  flex: 0 0 auto;
+  margin-bottom: 0;
 }
 
 .menu-group-title{
@@ -514,6 +522,7 @@ body{
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 .menu-group-title i{ font-size: 12px; }
 
@@ -522,10 +531,15 @@ body{
 }
 
 .menu-group .quick-card{
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-start;
   gap: 4px;
   min-height: unset;
+  width: fit-content;
+}
+
+.menu-group .quick-link{
+  width: 108px;
 }
 
 .admin-badge{

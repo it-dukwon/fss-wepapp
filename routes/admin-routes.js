@@ -5,14 +5,30 @@ const { auditLog } = require("../utils/audit-log");
 module.exports = function adminRoutes({ runPgQuery, ensureAdmin, invalidateAdminCache }) {
   const router = express.Router();
 
-  // 목록 조회
+  // 목록 조회 (로그인 이력 유저 포함 + 접속통계)
   router.get("/", ensureAdmin, async (req, res) => {
     try {
-      const r = await runPgQuery(
-        `SELECT id, upn, name, enabled, created_at
-         FROM admin_users
-         ORDER BY id ASC`
-      );
+      const r = await runPgQuery(`
+        SELECT
+          a.id,
+          COALESCE(a.upn, l.user_upn)       AS upn,
+          a.name,
+          COALESCE(a.enabled, false)         AS enabled,
+          a.created_at,
+          COALESCE(l.login_count, 0)::INT    AS login_count,
+          l.last_login
+        FROM (
+          SELECT
+            user_upn,
+            COUNT(*)::INT   AS login_count,
+            MAX(created_at) AS last_login
+          FROM user_activity_logs
+          WHERE action = 'LOGIN' AND user_upn IS NOT NULL
+          GROUP BY user_upn
+        ) l
+        FULL OUTER JOIN admin_users a ON lower(a.upn) = lower(l.user_upn)
+        ORDER BY a.id NULLS LAST, l.last_login DESC NULLS LAST
+      `);
       res.json({ success: true, admins: r.rows });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });

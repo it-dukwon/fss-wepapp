@@ -15,15 +15,17 @@
   </header>
 
   <div class="ls-card">
-    <h3 class="ls-section-title">XLS 파일 업로드</h3>
     <form id="uploadForm" enctype="multipart/form-data">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 class="ls-section-title" style="margin:0;">XLS 파일 업로드</h3>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="status" style="font-size:0.85rem;color:#555;"></span>
+          <button type="submit" class="ls-btn ls-btn-primary"><i class="fa-solid fa-upload"></i> 업로드</button>
+        </div>
+      </div>
       <div class="ls-form-group" style="max-width:400px;">
         <label>파일 선택</label>
         <input type="file" name="xlsFile" accept=".xls,.xlsx" required />
-      </div>
-      <div class="ls-btn-row">
-        <button type="submit" class="ls-btn ls-btn-primary"><i class="fa-solid fa-upload"></i> 업로드</button>
-        <span id="status" style="font-size:0.85rem;color:#555;"></span>
       </div>
     </form>
   </div>

@@ -626,7 +626,7 @@ async function loadBadges() {
           <td style="font-weight:700;">${b.badge_name}</td>
           <td>${farmMap[b.farm_id] || '-'}</td>
           <td>${b.manager || '-'}</td>
-          <td>${fmtDate2(b.stock_in_date)}</td>
+          <td>${fmtDate2(b.last_transfer_date)}</td>
           <td class="num-big">${fmt(b.current_count)}</td>
           <td><span class="badge-active">활성</span></td>
           <td style="white-space:nowrap;">
@@ -642,7 +642,7 @@ async function loadBadges() {
           <td style="font-weight:700;">${b.badge_name}</td>
           <td>${farmMap[b.farm_id] || '-'}</td>
           <td>${b.manager || '-'}</td>
-          <td>${fmtDate2(b.stock_in_date)}</td>
+          <td>${fmtDate2(b.last_transfer_date)}</td>
           <td><span class="badge-done">완료</span></td>
           <td><button class="ls-btn ls-btn-teal" onclick="setBadgeStatus(${b.batch_id},'active')">복원</button></td>
         </tr>`).join('')
@@ -663,20 +663,18 @@ async function addBadge() {
   if (!farm_id) { Swal.fire({ icon: 'warning', title: '농장을 선택하세요' }); return; }
 
   const badge_name       = farmName + suffix;
-  const manager       = get('bd-manager')?.value.trim() || '';
-  const stock_in_date = get('bd-stock-date')?.value || null;
-  const note          = get('bd-note')?.value.trim() || null;
+  const manager = get('bd-manager')?.value.trim() || '';
+  const note    = get('bd-note')?.value.trim() || null;
 
   try {
     const r = await fetch(`${BATCH_API}/batches`, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ badge_name, farm_id: parseInt(farm_id), manager, stock_in_date, note }),
+      body: JSON.stringify({ badge_name, farm_id: parseInt(farm_id), manager, note }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
     ['bd-suffix','bd-note'].forEach(id => { if (get(id)) get(id).value = ''; });
-    get('bd-stock-date').value = '';
     get('bd-farm').value = '';
     const mgSel = get('bd-manager');
     if (mgSel) { mgSel.innerHTML = '<option value="">-- 농장 먼저 선택 --</option>'; }
@@ -705,10 +703,6 @@ async function editBadge(batch_id) {
           <input id="swal-manager" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.manager || ''}">
         </div>
         <div>
-          <label style="font-size:0.82rem;color:#555;">입식일자</label>
-          <input id="swal-stock-date" type="date" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.stock_in_date ? String(b.stock_in_date).slice(0,10) : ''}">
-        </div>
-        <div>
           <label style="font-size:0.82rem;color:#555;">메모</label>
           <input id="swal-note" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.note || ''}">
         </div>
@@ -718,12 +712,11 @@ async function editBadge(batch_id) {
     confirmButtonText: '저장',
     cancelButtonText: '취소',
     preConfirm: () => ({
-      badge_name:    document.getElementById('swal-badge-name').value.trim(),
-      manager:       document.getElementById('swal-manager').value.trim(),
-      stock_in_date: document.getElementById('swal-stock-date').value || null,
-      note:          document.getElementById('swal-note').value.trim() || null,
-      farm_id:       b.farm_id,
-      status:        b.status,
+      badge_name: document.getElementById('swal-badge-name').value.trim(),
+      manager:    document.getElementById('swal-manager').value.trim(),
+      note:       document.getElementById('swal-note').value.trim() || null,
+      farm_id:    b.farm_id,
+      status:     b.status,
     }),
   });
 
