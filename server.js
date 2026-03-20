@@ -25,6 +25,7 @@ const azurePgRoutes = require("./routes/azure-postgres-routes");
 const livestockRoutes = require("./routes/livestock-routes");
 const emailRoutes = require("./routes/email-routes");
 const adminRoutes = require("./routes/admin-routes");
+const genieRoutes = require("./routes/genie-routes");
 const cron = require("node-cron");
 const { sendMail, buildMortalityReportHtml } = require("./utils/mailer");
 const { fetchMortalityReport, getEnabledRecipients } = require("./routes/email-routes");
@@ -145,10 +146,22 @@ app.use(express.urlencoded({ extended: false }));
 // ------------------------------------------------------------
 app.get("/api/me", async (req, res) => {
   if (req.session && req.session.user) {
+    let displayName = null;
+    try {
+      const upn = req.session.user.preferred_username;
+      if (upn) {
+        const r = await runPgQuery(
+          `SELECT name FROM admin_users WHERE lower(upn) = lower($1) AND name IS NOT NULL AND name <> ''`,
+          [upn]
+        );
+        displayName = r.rows[0]?.name || null;
+      }
+    } catch (_) {}
     return res.json({
       authenticated: true,
       user: req.session.user,
       isAdmin: await isAdminUser(req),
+      displayName,
     });
   }
   return res.status(401).json({ authenticated: false, isAdmin: false });
@@ -446,6 +459,7 @@ app.use("/api/azure-postgres", azurePgRoutes({ ensureAdmin }));
 app.use("/api/livestock", livestockRoutes({ runPgQuery }));
 app.use("/api/email", emailRoutes({ runPgQuery, ensureAdmin }));
 app.use("/api/admins", adminRoutes({ runPgQuery, ensureAdmin, invalidateAdminCache }));
+app.use("/api/genie", genieRoutes());
 
 // ------------------------------------------------------------
 // 페이지 진입 로그 (로그인 사용자 전용)

@@ -14,7 +14,7 @@
 
     try {
       const user = data.user || {};
-      const name = user.name || user.preferred_username || user.oid || "사용자";
+      const name = data.displayName || user.name || user.preferred_username || user.oid || "사용자";
 
       // 표시할 위치: .avatar 요소가 있다면 이름을 표시
       const avatar = document.querySelector('.avatar');

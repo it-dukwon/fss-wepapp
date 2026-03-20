@@ -76,6 +76,10 @@
               <i class="fa-solid fa-chart-line"></i>
               <span>종합 대시보드</span>
             </a>
+            <a class="quick-link" href="detail/genie.html" data-menu="Genie AI 데이터 분석 챗봇">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Genie AI 분석</span>
+            </a>
           </div>
         </div>
 
@@ -188,9 +192,9 @@
     fetch("/api/me", { credentials: "same-origin" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.user?.name) {
+        if (data?.displayName || data?.user?.name) {
           const avatar = document.getElementById("userAvatar");
-          if (avatar) avatar.title = data.user.name;
+          if (avatar) avatar.title = data.displayName || data.user.name;
         }
         if (data?.isAdmin) {
           document.querySelectorAll(".admin-only").forEach(el => {

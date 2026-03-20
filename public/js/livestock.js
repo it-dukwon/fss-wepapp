@@ -17,7 +17,8 @@ document.querySelectorAll(".ls-tab-btn").forEach((btn) => {
 
     if (tab === "status")    loadStatus();
     if (tab === "events")    { loadBatchSelect(); loadEvents(); }
-    if (tab === "mortality") { loadMortality(); loadSchedule(); }
+    if (tab === "mortality") loadMortality();
+    if (tab === "schedule")  loadSchedule();
   });
 });
 

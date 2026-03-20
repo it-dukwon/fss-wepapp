@@ -6,70 +6,6 @@
   <title>관리자 계정 관리</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <style>
-    .add-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      margin-bottom: 20px;
-    }
-    .add-row label {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.78rem;
-      color: #555;
-      gap: 3px;
-    }
-    .add-row input {
-      padding: 7px 10px;
-      border: 1px solid #d0d5dd;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      min-width: 220px;
-    }
-    table.admin-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-    table.admin-table th {
-      background: #f1f5f9;
-      color: #374151;
-      padding: 8px 12px;
-      text-align: left;
-      border-bottom: 2px solid #e2e8f0;
-      white-space: nowrap;
-    }
-    table.admin-table td {
-      padding: 8px 12px;
-      border-bottom: 1px solid #e9edf3;
-      vertical-align: middle;
-    }
-    table.admin-table tr:hover td { background: #f8fafc; }
-    table.admin-table tr.row-guest td { background: #fafafa; color: #777; }
-    table.admin-table tr.row-guest:hover td { background: #f3f4f6; }
-    .badge-enabled  { display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.73rem;font-weight:600;background:#dcfce7;color:#166534; }
-    .badge-disabled { display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.73rem;font-weight:600;background:#fee2e2;color:#991b1b; }
-    .badge-guest    { display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.73rem;font-weight:600;background:#f1f5f9;color:#64748b; }
-    .btn-sm {
-      padding: 4px 10px;
-      border-radius: 5px;
-      border: none;
-      font-size: 0.78rem;
-      cursor: pointer;
-      margin-right: 4px;
-    }
-    .btn-toggle  { background:#dbeafe;color:#1e40af; }
-    .btn-toggle:hover { background:#bfdbfe; }
-    .btn-del     { background:#fee2e2;color:#991b1b; }
-    .btn-del:hover { background:#fecaca; }
-    .btn-promote { background:#dcfce7;color:#166534; }
-    .btn-promote:hover { background:#bbf7d0; }
-    #status-msg { padding: 16px; color: #888; font-size: 0.9rem; }
-    .login-count { font-weight: 700; color: #374151; }
-    .login-zero  { color: #ccc; }
-  </style>
 </head>
 <body>
   <header class="page-header">
@@ -79,249 +15,271 @@
     <h2 class="detail-title">관리자 계정 관리</h2>
   </header>
 
+  <!-- 관리자 추가 카드 -->
   <div class="ls-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <h3 class="ls-section-title" style="margin:0;">관리자 추가</h3>
+      <button class="ls-btn ls-btn-primary" id="btnAdd"><i class="fa-solid fa-plus"></i> 추가</button>
     </div>
-    <div class="add-row">
-      <label>
-        UPN (이메일) <span style="color:#d9534f;">*</span>
+    <div class="ls-form-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="ls-form-group">
+        <label>UPN (이메일) *</label>
         <input type="email" id="newUpn" placeholder="user@example.com" />
-      </label>
-      <label>
-        표시 이름
+      </div>
+      <div class="ls-form-group">
+        <label>표시 이름</label>
         <input type="text" id="newName" placeholder="홍길동" />
-      </label>
-      <button class="ls-btn ls-btn-primary" id="btnAdd" style="height:32px;margin-top:auto;">
-        <i class="fa-solid fa-plus"></i> 추가
-      </button>
+      </div>
     </div>
   </div>
 
+  <!-- 계정 목록 카드 -->
   <div class="ls-card">
-    <h3 class="ls-section-title">계정 목록 <small style="font-size:0.75rem;color:#94a3b8;font-weight:400;margin-left:6px;">로그인 이력이 있는 모든 계정 포함</small></h3>
-    <div id="status-msg">로딩 중...</div>
-    <table class="admin-table" id="adminTable" style="display:none;">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>UPN (이메일)</th>
-          <th>표시 이름</th>
-          <th>상태</th>
-          <th>등록일</th>
-          <th>접속횟수</th>
-          <th>최종접속일</th>
-          <th>작업</th>
-        </tr>
-      </thead>
-      <tbody id="adminTbody"></tbody>
-    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 class="ls-section-title" style="margin:0;">
+        계정 목록
+        <small style="font-size:0.75rem;color:#94a3b8;font-weight:400;margin-left:6px;">로그인 이력이 있는 모든 계정 포함</small>
+      </h3>
+      <button class="ls-btn ls-btn-gray" onclick="loadAdmins()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+    </div>
+    <div class="ls-table-wrap">
+      <table class="ls-table" id="adminTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>UPN (이메일)</th>
+            <th>표시 이름</th>
+            <th>상태</th>
+            <th>등록일</th>
+            <th>접속횟수</th>
+            <th>최종접속일</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="adminTbody">
+          <tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="../js/table-sort.js"></script>
   <script>
-  (function () {
-    function toKST(utcStr) {
-      if (!utcStr) return "-";
-      return new Date(utcStr).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
-    }
-    function toKSTDateTime(utcStr) {
-      if (!utcStr) return "-";
-      return new Date(utcStr).toLocaleString("ko-KR", {
-        timeZone: "Asia/Seoul", year: "numeric", month: "2-digit",
-        day: "2-digit", hour: "2-digit", minute: "2-digit"
-      });
-    }
+  function toKST(utcStr) {
+    if (!utcStr) return "-";
+    return new Date(utcStr).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
+  }
+  function toKSTDT(utcStr) {
+    if (!utcStr) return "-";
+    return new Date(utcStr).toLocaleString("ko-KR", {
+      timeZone: "Asia/Seoul", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit"
+    });
+  }
+  function toast(icon, title) {
+    Swal.fire({ toast: true, position: "top-end", icon, title, showConfirmButton: false, timer: 1500 });
+  }
 
-    async function loadAdmins() {
-      const statusEl = document.getElementById("status-msg");
-      const tableEl  = document.getElementById("adminTable");
-      statusEl.textContent = "로딩 중...";
-      statusEl.style.display = "";
-      tableEl.style.display = "none";
-
-      try {
-        const res = await fetch("/api/admins", { credentials: "same-origin" });
-        if (res.status === 403) { statusEl.textContent = "관리자만 접근할 수 있습니다."; return; }
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || "오류");
-        renderTable(data.admins);
-        statusEl.style.display = "none";
-        tableEl.style.display = "";
-      } catch (err) {
-        statusEl.textContent = "로드 실패: " + err.message;
-        statusEl.style.color = "#d9534f";
-      }
-    }
-
-    function renderTable(admins) {
-      const tbody = document.getElementById("adminTbody");
-      if (!admins.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">계정이 없습니다.</td></tr>`;
+  async function loadAdmins() {
+    const tbody = document.getElementById("adminTbody");
+    tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>`;
+    try {
+      const res = await fetch("/api/admins", { credentials: "same-origin" });
+      if (res.status === 403) {
+        tbody.innerHTML = `<tr><td colspan="8" class="ls-empty" style="color:#d9534f;">관리자만 접근할 수 있습니다.</td></tr>`;
         return;
       }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "오류");
+      renderTable(data.admins);
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="8" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+    }
+  }
 
-      tbody.innerHTML = admins.map(a => {
-        const isGuest  = a.id === null || a.id === undefined;  // 로그인 이력만 있는 비관리자
-        const rowClass = isGuest ? "row-guest" : "";
-        const idCell   = isGuest ? `<span style="color:#ddd;">-</span>` : `<span style="color:#aaa;">${a.id}</span>`;
-        const nameCell = isGuest
-          ? `<span style="color:#aaa;">-</span>`
-          : `<input type="text" value="${a.name || ""}" data-id="${a.id}"
-               class="name-input"
-               style="border:1px solid #e2e8f0;border-radius:5px;padding:3px 8px;font-size:0.83rem;width:120px;" />`;
-        const badgeHtml = isGuest
-          ? `<span class="badge-guest">미등록</span>`
-          : `<span class="badge-${a.enabled ? "enabled" : "disabled"}">${a.enabled ? "활성" : "비활성"}</span>`;
-        const createdAt = isGuest ? `<span style="color:#ccc;">-</span>` : toKST(a.created_at);
-        const loginCount = a.login_count > 0
-          ? `<span class="login-count">${a.login_count.toLocaleString()}</span>`
-          : `<span class="login-zero">0</span>`;
-        const lastLogin = toKSTDateTime(a.last_login);
+  function renderTable(admins) {
+    const tbody = document.getElementById("adminTbody");
+    if (!admins.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">계정이 없습니다.</td></tr>`;
+      return;
+    }
 
-        const actionCell = isGuest
-          ? `<button class="btn-sm btn-promote" data-upn="${a.upn}">관리자 등록</button>`
-          : `
-            <button class="btn-sm btn-toggle" data-id="${a.id}" data-enabled="${a.enabled}">
-              ${a.enabled ? "비활성화" : "활성화"}
-            </button>
-            <button class="btn-sm btn-sm btn-save" data-id="${a.id}"
-              style="background:#e0f2fe;color:#0369a1;">저장</button>
-            <button class="btn-sm btn-del" data-id="${a.id}">삭제</button>
-          `;
+    tbody.innerHTML = admins.map(a => {
+      const isGuest = a.id === null || a.id === undefined;
+      const idCell  = isGuest ? `<span style="color:#ccc;">-</span>` : a.id;
 
-        return `<tr class="${rowClass}">
-          <td>${idCell}</td>
-          <td>${a.upn}</td>
-          <td>${nameCell}</td>
-          <td>${badgeHtml}</td>
-          <td style="white-space:nowrap;">${createdAt}</td>
-          <td style="text-align:center;">${loginCount}</td>
-          <td style="white-space:nowrap;">${lastLogin}</td>
-          <td style="white-space:nowrap;">${actionCell}</td>
-        </tr>`;
-      }).join("");
+      const statusBadge = isGuest
+        ? `<span class="badge-done">미등록</span>`
+        : `<span class="badge-${a.enabled ? "active" : "done"}">${a.enabled ? "활성" : "비활성"}</span>`;
 
-      // 관리자 등록 (비관리자 → 관리자)
-      tbody.querySelectorAll(".btn-promote").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const upn = btn.dataset.upn;
-          const { isConfirmed } = await Swal.fire({
-            title: "관리자로 등록할까요?",
-            text: upn,
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "등록",
-            cancelButtonText: "취소",
-            confirmButtonColor: "#146C43",
-          });
-          if (!isConfirmed) return;
-          try {
-            const res = await fetch("/api/admins", {
-              method: "POST",
+      const loginCount = (a.login_count > 0)
+        ? `<b>${Number(a.login_count).toLocaleString()}</b>`
+        : `<span style="color:#ccc;">0</span>`;
+
+      // 작업 버튼
+      const actionBtns = isGuest ? `
+        <button class="ls-btn ls-btn-gray btn-save-name" data-upn="${a.upn}" style="padding:3px 8px;font-size:0.78rem;">이름저장</button>
+        <button class="ls-btn ls-btn-primary btn-promote" data-upn="${a.upn}" style="padding:3px 8px;font-size:0.78rem;">관리자 등록</button>
+      ` : `
+        <button class="ls-btn ls-btn-gray btn-save-name" data-id="${a.id}" data-upn="${a.upn}" style="padding:3px 8px;font-size:0.78rem;">이름저장</button>
+        <button class="ls-btn ${a.enabled ? "ls-btn-yellow" : "ls-btn-teal"} btn-toggle" data-id="${a.id}" data-enabled="${a.enabled}" style="padding:3px 8px;font-size:0.78rem;">${a.enabled ? "비활성화" : "활성화"}</button>
+        <button class="ls-btn ls-btn-red btn-del" data-id="${a.id}" style="padding:3px 8px;font-size:0.78rem;">삭제</button>
+      `;
+
+      return `<tr>
+        <td>${idCell}</td>
+        <td style="text-align:left;">${a.upn}</td>
+        <td><input type="text" class="name-input" data-id="${a.id || ""}" data-upn="${a.upn}"
+          value="${a.name || ""}" placeholder="표시 이름"
+          style="border:1px solid #e2e8f0;border-radius:5px;padding:3px 8px;font-size:0.83rem;width:120px;text-align:left;" /></td>
+        <td>${statusBadge}</td>
+        <td>${isGuest ? "<span style='color:#ccc;'>-</span>" : toKST(a.created_at)}</td>
+        <td>${loginCount}</td>
+        <td style="white-space:nowrap;">${toKSTDT(a.last_login)}</td>
+        <td style="white-space:nowrap;">${actionBtns}</td>
+      </tr>`;
+    }).join("");
+
+    // 이름 저장 (관리자 + 비관리자 공통)
+    tbody.querySelectorAll(".btn-save-name").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const upn  = btn.dataset.upn;
+        const id   = btn.dataset.id ? parseInt(btn.dataset.id, 10) : null;
+        const nameInput = tbody.querySelector(`.name-input[data-upn="${upn}"]`);
+        const name = nameInput?.value.trim() || "";
+
+        try {
+          if (id) {
+            // 기존 관리자: PUT으로 이름만 저장 (enabled 유지)
+            const toggleBtn = tbody.querySelector(`.btn-toggle[data-id="${id}"]`);
+            const enabled   = toggleBtn?.dataset.enabled === "true";
+            const res = await fetch(`/api/admins/${id}`, {
+              method: "PUT", credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
-              credentials: "same-origin",
-              body: JSON.stringify({ upn }),
+              body: JSON.stringify({ name, enabled }),
             });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || "등록 실패");
-            Swal.fire({ icon: "success", title: "등록됨", timer: 1000, showConfirmButton: false });
-            loadAdmins();
-          } catch (err) {
-            Swal.fire({ icon: "error", title: "오류", text: err.message });
-          }
-        });
-      });
-
-      // 활성/비활성 토글
-      tbody.querySelectorAll(".btn-toggle").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id      = parseInt(btn.dataset.id, 10);
-          const enabled = btn.dataset.enabled === "true";
-          const nameInput = tbody.querySelector(`.name-input[data-id="${id}"]`);
-          await callUpdate(id, nameInput?.value || "", !enabled);
-        });
-      });
-
-      // 이름 저장
-      tbody.querySelectorAll(".btn-save").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = parseInt(btn.dataset.id, 10);
-          const nameInput = tbody.querySelector(`.name-input[data-id="${id}"]`);
-          const toggleBtn = tbody.querySelector(`.btn-toggle[data-id="${id}"]`);
-          const enabled   = toggleBtn?.dataset.enabled === "true";
-          await callUpdate(id, nameInput?.value || "", enabled);
-        });
-      });
-
-      // 삭제
-      tbody.querySelectorAll(".btn-del").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = parseInt(btn.dataset.id, 10);
-          const { isConfirmed } = await Swal.fire({
-            title: "삭제 확인", text: "이 관리자를 삭제하시겠습니까?",
-            icon: "warning", showCancelButton: true,
-            confirmButtonColor: "#d9534f", confirmButtonText: "삭제", cancelButtonText: "취소",
-          });
-          if (!isConfirmed) return;
-          try {
-            const res = await fetch(`/api/admins/${id}`, { method: "DELETE", credentials: "same-origin" });
+            if (!data.success) throw new Error(data.error);
+          } else {
+            // 비관리자: PATCH name (enabled=false upsert)
+            const res = await fetch("/api/admins/name", {
+              method: "PATCH", credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ upn, name }),
+            });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || "삭제 실패");
-            Swal.fire({ icon: "success", title: "삭제됨", timer: 1200, showConfirmButton: false });
-            loadAdmins();
-          } catch (err) {
-            Swal.fire({ icon: "error", title: "오류", text: err.message });
+            if (!data.success) throw new Error(data.error);
           }
-        });
+          toast("success", "저장됐습니다");
+          loadAdmins();
+        } catch (err) {
+          Swal.fire({ icon: "error", title: "저장 실패", text: err.message });
+        }
       });
-    }
-
-    async function callUpdate(id, name, enabled) {
-      try {
-        const res = await fetch(`/api/admins/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ name, enabled }),
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || "수정 실패");
-        Swal.fire({ icon: "success", title: "저장됨", timer: 1000, showConfirmButton: false });
-        loadAdmins();
-      } catch (err) {
-        Swal.fire({ icon: "error", title: "오류", text: err.message });
-      }
-    }
-
-    document.getElementById("btnAdd").addEventListener("click", async () => {
-      const upn  = document.getElementById("newUpn").value.trim();
-      const name = document.getElementById("newName").value.trim();
-      if (!upn) { Swal.fire({ icon: "warning", title: "UPN 입력 필요", text: "이메일 주소를 입력하세요." }); return; }
-      try {
-        const res = await fetch("/api/admins", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ upn, name }),
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || "추가 실패");
-        document.getElementById("newUpn").value = "";
-        document.getElementById("newName").value = "";
-        Swal.fire({ icon: "success", title: "추가됨", timer: 1000, showConfirmButton: false });
-        loadAdmins();
-      } catch (err) {
-        Swal.fire({ icon: "error", title: "오류", text: err.message });
-      }
     });
 
-    document.getElementById("newUpn").addEventListener("keydown", e => {
-      if (e.key === "Enter") document.getElementById("btnAdd").click();
+    // 관리자 등록 (미등록 → 관리자)
+    tbody.querySelectorAll(".btn-promote").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const upn = btn.dataset.upn;
+        const nameInput = tbody.querySelector(`.name-input[data-upn="${upn}"]`);
+        const name = nameInput?.value.trim() || "";
+        const { isConfirmed } = await Swal.fire({
+          title: "관리자로 등록할까요?", text: upn, icon: "question",
+          showCancelButton: true, confirmButtonText: "등록", cancelButtonText: "취소",
+          confirmButtonColor: "#146C43",
+        });
+        if (!isConfirmed) return;
+        try {
+          const res = await fetch("/api/admins", {
+            method: "POST", credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ upn, name }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error);
+          toast("success", "등록됐습니다");
+          loadAdmins();
+        } catch (err) {
+          Swal.fire({ icon: "error", title: "오류", text: err.message });
+        }
+      });
     });
 
-    loadAdmins();
-  })();
+    // 활성/비활성 토글
+    tbody.querySelectorAll(".btn-toggle").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id      = parseInt(btn.dataset.id, 10);
+        const enabled = btn.dataset.enabled === "true";
+        const nameInput = tbody.querySelector(`.name-input[data-id="${id}"]`);
+        try {
+          const res = await fetch(`/api/admins/${id}`, {
+            method: "PUT", credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: nameInput?.value || "", enabled: !enabled }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error);
+          toast("success", !enabled ? "활성화됐습니다" : "비활성화됐습니다");
+          loadAdmins();
+        } catch (err) {
+          Swal.fire({ icon: "error", title: "오류", text: err.message });
+        }
+      });
+    });
+
+    // 삭제
+    tbody.querySelectorAll(".btn-del").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = parseInt(btn.dataset.id, 10);
+        const { isConfirmed } = await Swal.fire({
+          title: "삭제 확인", text: "이 관리자를 삭제하시겠습니까?", icon: "warning",
+          showCancelButton: true, confirmButtonColor: "#d9534f",
+          confirmButtonText: "삭제", cancelButtonText: "취소",
+        });
+        if (!isConfirmed) return;
+        try {
+          const res = await fetch(`/api/admins/${id}`, { method: "DELETE", credentials: "same-origin" });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error);
+          toast("success", "삭제됐습니다");
+          loadAdmins();
+        } catch (err) {
+          Swal.fire({ icon: "error", title: "오류", text: err.message });
+        }
+      });
+    });
+
+    window.initTableSort?.();
+  }
+
+  document.getElementById("btnAdd").addEventListener("click", async () => {
+    const upn  = document.getElementById("newUpn").value.trim();
+    const name = document.getElementById("newName").value.trim();
+    if (!upn) { Swal.fire({ icon: "warning", title: "UPN 입력 필요" }); return; }
+    try {
+      const res = await fetch("/api/admins", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ upn, name }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      document.getElementById("newUpn").value = "";
+      document.getElementById("newName").value = "";
+      toast("success", "추가됐습니다");
+      loadAdmins();
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "오류", text: err.message });
+    }
+  });
+
+  document.getElementById("newUpn").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("btnAdd").click();
+  });
+
+  loadAdmins();
   </script>
   <script src="/js/page-view-log.js" data-page="관리자 계정 관리"></script>
 </body>

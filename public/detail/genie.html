@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Genie AI 데이터 분석</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .genie-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+
+    /* 채팅 메시지 영역 */
+    .chat-history {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 200px;
+      margin-bottom: 16px;
+    }
+
+    .chat-msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 85%;
+    }
+    .chat-msg.user  { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.genie { align-self: flex-start; align-items: flex-start; }
+
+    .chat-label {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .chat-msg.user  .chat-bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 3px; }
+    .chat-msg.genie .chat-bubble { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 3px; }
+
+    /* SQL 블록 */
+    .sql-block {
+      margin-top: 6px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .sql-block-label {
+      font-size: 0.7rem;
+      color: #64748b;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+
+    /* 결과 테이블 */
+    .result-table-wrap {
+      margin-top: 8px;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .result-table th {
+      background: #f8fafc;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    .result-table td {
+      padding: 5px 10px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+    .result-table tr:last-child td { border-bottom: none; }
+
+    /* 입력 영역 */
+    .chat-input-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .chat-input-wrap textarea {
+      flex: 1;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: none;
+      min-height: 44px;
+      max-height: 140px;
+      overflow-y: auto;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+    .chat-input-wrap textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    .btn-send {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      height: 44px;
+      transition: background 0.15s;
+    }
+    .btn-send:hover { background: #1d4ed8; }
+    .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* 새 대화 버튼 */
+    .btn-new-chat {
+      background: none;
+      border: 1.5px solid #cbd5e1;
+      color: #64748b;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-new-chat:hover { border-color: #2563eb; color: #2563eb; }
+
+    /* 로딩 점 애니메이션 */
+    .typing-dots span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #94a3b8;
+      margin: 0 2px;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 안내 문구 */
+    .genie-intro {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      padding: 32px 0 8px;
+    }
+    .genie-intro i { font-size: 2rem; color: #cbd5e1; margin-bottom: 8px; display: block; }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="logo-link" title="메인으로">
+      <img src="../images/logo_text.png" alt="덕원농장 위탁장 관리" class="page-logo" />
+    </a>
+    <h2 class="detail-title">Genie AI 데이터 분석</h2>
+  </header>
+
+  <div class="genie-wrap">
+    <!-- 대화 카드 -->
+    <div class="ls-card" style="padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <span style="font-size:0.85rem;color:#64748b;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:#2563eb;"></i>
+          Databricks Genie에게 데이터에 대해 자유롭게 물어보세요.
+        </span>
+        <button class="btn-new-chat" id="btnNewChat"><i class="fa-solid fa-plus"></i> 새 대화</button>
+      </div>
+
+      <!-- 채팅 히스토리 -->
+      <div class="chat-history" id="chatHistory">
+        <div class="genie-intro">
+          <i class="fa-solid fa-database"></i>
+          질문을 입력하면 Genie가 데이터를 분석해 답변합니다.
+        </div>
+      </div>
+
+      <!-- 입력 -->
+      <div class="chat-input-wrap">
+        <textarea id="chatInput" placeholder="예: 이번 달 농장별 폐사율을 알려줘" rows="1"></textarea>
+        <button class="btn-send" id="btnSend"><i class="fa-solid fa-paper-plane"></i> 전송</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let conversationId = null;
+    let sending = false;
+
+    const chatHistory = document.getElementById("chatHistory");
+    const chatInput   = document.getElementById("chatInput");
+    const btnSend     = document.getElementById("btnSend");
+    const btnNewChat  = document.getElementById("btnNewChat");
+
+    // 자동 높이 조절
+    chatInput.addEventListener("input", () => {
+      chatInput.style.height = "auto";
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + "px";
+    });
+
+    // Enter 전송 (Shift+Enter 줄바꿈)
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!sending) sendMessage();
+      }
+    });
+
+    btnSend.addEventListener("click", () => { if (!sending) sendMessage(); });
+
+    btnNewChat.addEventListener("click", () => {
+      conversationId = null;
+      chatHistory.innerHTML = `
+        <div class="genie-intro">
+          <i class="fa-solid fa-database"></i>
+          질문을 입력하면 Genie가 데이터를 분석해 답변합니다.
+        </div>`;
+      chatInput.value = "";
+      chatInput.style.height = "auto";
+      chatInput.focus();
+    });
+
+    function appendMsg(role, content) {
+      // 인트로 제거
+      chatHistory.querySelector(".genie-intro")?.remove();
+
+      const wrap = document.createElement("div");
+      wrap.className = `chat-msg ${role}`;
+
+      const label = document.createElement("div");
+      label.className = "chat-label";
+      label.textContent = role === "user" ? "나" : "Genie";
+
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble";
+
+      if (typeof content === "string") {
+        bubble.textContent = content;
+      } else {
+        bubble.appendChild(content);
+      }
+
+      wrap.appendChild(label);
+      wrap.appendChild(bubble);
+      chatHistory.appendChild(wrap);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      return wrap;
+    }
+
+    function appendTyping() {
+      const wrap = appendMsg("genie", "");
+      const bubble = wrap.querySelector(".chat-bubble");
+      bubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+      return wrap;
+    }
+
+    function buildGenieContent(data) {
+      const frag = document.createDocumentFragment();
+
+      if (data.answer_text) {
+        const p = document.createElement("div");
+        p.textContent = data.answer_text;
+        frag.appendChild(p);
+      }
+
+      if (data.sql_query) {
+        const labelEl = document.createElement("div");
+        labelEl.className = "sql-block-label";
+        labelEl.textContent = "실행된 SQL";
+        const pre = document.createElement("div");
+        pre.className = "sql-block";
+        pre.textContent = data.sql_query;
+        frag.appendChild(labelEl);
+        frag.appendChild(pre);
+      }
+
+      if (data.columns?.length && data.rows?.length) {
+        const tableWrap = document.createElement("div");
+        tableWrap.className = "result-table-wrap";
+        const table = document.createElement("table");
+        table.className = "result-table";
+
+        const thead = document.createElement("thead");
+        const trh = document.createElement("tr");
+        data.columns.forEach(col => {
+          const th = document.createElement("th");
+          th.textContent = col;
+          trh.appendChild(th);
+        });
+        thead.appendChild(trh);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        const maxRows = Math.min(data.rows.length, 100);
+        for (let i = 0; i < maxRows; i++) {
+          const tr = document.createElement("tr");
+          data.rows[i].forEach(val => {
+            const td = document.createElement("td");
+            td.textContent = val ?? "-";
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        }
+        if (data.rows.length > 100) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = data.columns.length;
+          td.style.color = "#94a3b8";
+          td.style.textAlign = "center";
+          td.textContent = `... 외 ${data.rows.length - 100}행`;
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        tableWrap.appendChild(table);
+        frag.appendChild(tableWrap);
+      }
+
+      if (!data.answer_text && !data.sql_query) {
+        const p = document.createElement("div");
+        p.textContent = "응답이 없습니다.";
+        p.style.color = "#94a3b8";
+        frag.appendChild(p);
+      }
+
+      return frag;
+    }
+
+    async function sendMessage() {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      sending = true;
+      btnSend.disabled = true;
+      chatInput.disabled = true;
+
+      appendMsg("user", message);
+      chatInput.value = "";
+      chatInput.style.height = "auto";
+
+      const typingEl = appendTyping();
+
+      try {
+        const res = await fetch("/api/genie/chat", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, conversation_id: conversationId }),
+        });
+
+        const data = await res.json();
+        typingEl.remove();
+
+        if (!res.ok || !data.success) {
+          appendMsg("genie", `오류: ${data.error || "알 수 없는 오류"}`);
+        } else {
+          conversationId = data.conversation_id;
+          appendMsg("genie", buildGenieContent(data));
+        }
+      } catch (err) {
+        typingEl.remove();
+        appendMsg("genie", `네트워크 오류: ${err.message}`);
+      } finally {
+        sending = false;
+        btnSend.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+      }
+    }
+  </script>
+  <script src="/js/page-view-log.js" data-page="Genie AI 데이터 분석"></script>
+</body>
+</html>

@@ -35,6 +35,27 @@ module.exports = function adminRoutes({ runPgQuery, ensureAdmin, invalidateAdmin
     }
   });
 
+  // 표시 이름 저장 (비관리자 포함 — enabled=false로 upsert, 기존 enabled는 유지)
+  router.patch("/name", ensureAdmin, async (req, res) => {
+    try {
+      const upn  = (req.body?.upn  || "").trim().toLowerCase();
+      const name = (req.body?.name || "").trim() || null;
+      if (!upn) return res.status(400).json({ error: "upn 필수" });
+
+      await runPgQuery(
+        `INSERT INTO admin_users (upn, name, enabled)
+         VALUES ($1, $2, false)
+         ON CONFLICT (upn) DO UPDATE SET name = EXCLUDED.name`,
+        [upn, name]
+      );
+      invalidateAdminCache();
+      auditLog(req, "UPDATE", "admin_user", null, `표시이름 저장: ${upn} → ${name}`);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // 등록
   router.post("/", ensureAdmin, async (req, res) => {
     try {
