@@ -30,7 +30,9 @@ module.exports = function livestockRoutes({ runPgQuery }) {
             - COALESCE(SUM(e.deaths),      0)
             - COALESCE(SUM(e.culled),      0)
             - COALESCE(SUM(e.shipped),     0)
-          )::INT AS current_count
+          )::INT AS current_count,
+          MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END) AS last_transfer_date,
+          MAX(e.event_date)                                        AS last_event_date
         FROM livestock_batches b
         LEFT JOIN list_farms f ON f."농장ID" = b.farm_id
         LEFT JOIN livestock_events e ON e.batch_id = b.batch_id

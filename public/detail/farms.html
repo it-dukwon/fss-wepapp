@@ -16,14 +16,14 @@
 
   <!-- 탭 네비게이션 -->
   <div class="ls-tabs">
-    <button class="ls-tab-btn active" data-tab="farms">농장</button>
-    <button class="ls-tab-btn" data-tab="companies">사료회사</button>
+    <button class="ls-tab-btn active" data-tab="companies">사료회사</button>
     <button class="ls-tab-btn" data-tab="managers">관리자</button>
+    <button class="ls-tab-btn" data-tab="farms">농장</button>
     <button class="ls-tab-btn" data-tab="badges">뱃지</button>
   </div>
 
   <!-- 탭 1: 농장 -->
-  <div id="tab-farms" class="ls-tab-content active">
+  <div id="tab-farms" class="ls-tab-content">
     <div class="ls-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h3 class="ls-section-title" style="margin:0;">신규 농장 등록</h3>
@@ -88,7 +88,7 @@
   </div>
 
   <!-- 탭 2: 사료회사 -->
-  <div id="tab-companies" class="ls-tab-content">
+  <div id="tab-companies" class="ls-tab-content active">
     <div class="ls-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h3 class="ls-section-title" style="margin:0;">사료회사 등록</h3>
@@ -187,14 +187,6 @@
           <label>입식일자</label>
           <input type="date" id="bd-stock-date" />
         </div>
-        <div class="ls-form-group">
-          <label>입식두수</label>
-          <input type="number" id="bd-stock-count" min="0" value="0" />
-        </div>
-        <div class="ls-form-group">
-          <label>전월이월두수</label>
-          <input type="number" id="bd-prev-count" min="0" value="0" />
-        </div>
         <div class="ls-form-group" style="grid-column:span 2;">
           <label>메모</label>
           <input type="text" id="bd-note" />
@@ -212,12 +204,11 @@
           <thead>
             <tr>
               <th>ID</th><th>뱃지명</th><th>농장</th><th>관리자</th>
-              <th>입식일</th><th>입식두수</th><th>전월이월</th>
-              <th>현재두수</th><th>상태</th><th>완료처리</th>
+              <th>입식일</th><th>현재두수</th><th>상태</th><th>완료처리</th>
             </tr>
           </thead>
           <tbody id="badges-active-tbody">
-            <tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -230,11 +221,11 @@
           <thead>
             <tr>
               <th>ID</th><th>뱃지명</th><th>농장</th><th>관리자</th>
-              <th>입식일</th><th>입식두수</th><th>상태</th><th>복원</th>
+              <th>입식일</th><th>상태</th><th>복원</th>
             </tr>
           </thead>
           <tbody id="badges-done-tbody">
-            <tr><td colspan="8" class="ls-empty">완료된 뱃지 없음</td></tr>
+            <tr><td colspan="7" class="ls-empty">완료된 뱃지 없음</td></tr>
           </tbody>
         </table>
       </div>

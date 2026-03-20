@@ -602,8 +602,8 @@ async function loadBadges() {
   const doneTbody   = get('badges-done-tbody');
   if (!activeTbody) return;
 
-  activeTbody.innerHTML = '<tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>';
-  doneTbody.innerHTML   = '<tr><td colspan="8"  class="ls-empty">로딩 중...</td></tr>';
+  activeTbody.innerHTML = '<tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>';
+  doneTbody.innerHTML   = '<tr><td colspan="7" class="ls-empty">로딩 중...</td></tr>';
 
   try {
     const r = await fetch(`${BATCH_API}/batches?status=all`, { credentials: 'include' });
@@ -627,8 +627,6 @@ async function loadBadges() {
           <td>${farmMap[b.farm_id] || '-'}</td>
           <td>${b.manager || '-'}</td>
           <td>${fmtDate2(b.stock_in_date)}</td>
-          <td>${fmt(b.stock_in_count)}</td>
-          <td>${fmt(b.prev_month_count)}</td>
           <td class="num-big">${fmt(b.current_count)}</td>
           <td><span class="badge-active">활성</span></td>
           <td style="white-space:nowrap;">
@@ -636,7 +634,7 @@ async function loadBadges() {
             <button class="ls-btn ls-btn-gray" onclick="setBadgeStatus(${b.batch_id},'completed')">완료처리</button>
           </td>
         </tr>`).join('')
-      : '<tr><td colspan="10" class="ls-empty">없음</td></tr>';
+      : '<tr><td colspan="8" class="ls-empty">없음</td></tr>';
 
     doneTbody.innerHTML = completed.length
       ? completed.map(b => `<tr>
@@ -645,15 +643,14 @@ async function loadBadges() {
           <td>${farmMap[b.farm_id] || '-'}</td>
           <td>${b.manager || '-'}</td>
           <td>${fmtDate2(b.stock_in_date)}</td>
-          <td>${fmt(b.stock_in_count)}</td>
           <td><span class="badge-done">완료</span></td>
           <td><button class="ls-btn ls-btn-teal" onclick="setBadgeStatus(${b.batch_id},'active')">복원</button></td>
         </tr>`).join('')
-      : '<tr><td colspan="8" class="ls-empty">없음</td></tr>';
+      : '<tr><td colspan="7" class="ls-empty">없음</td></tr>';
 
     window.initTableSort?.();
   } catch (err) {
-    activeTbody.innerHTML = `<tr><td colspan="10" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+    activeTbody.innerHTML = `<tr><td colspan="8" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
 }
 
@@ -666,22 +663,19 @@ async function addBadge() {
   if (!farm_id) { Swal.fire({ icon: 'warning', title: '농장을 선택하세요' }); return; }
 
   const badge_name       = farmName + suffix;
-  const manager          = get('bd-manager')?.value.trim() || '';
-  const stock_in_date    = get('bd-stock-date')?.value || null;
-  const stock_in_count   = parseInt(get('bd-stock-count')?.value) || 0;
-  const prev_month_count = parseInt(get('bd-prev-count')?.value) || 0;
-  const note             = get('bd-note')?.value.trim() || null;
+  const manager       = get('bd-manager')?.value.trim() || '';
+  const stock_in_date = get('bd-stock-date')?.value || null;
+  const note          = get('bd-note')?.value.trim() || null;
 
   try {
     const r = await fetch(`${BATCH_API}/batches`, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ badge_name, farm_id: parseInt(farm_id), manager, stock_in_date, stock_in_count, prev_month_count, note }),
+      body: JSON.stringify({ badge_name, farm_id: parseInt(farm_id), manager, stock_in_date, note }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
     ['bd-suffix','bd-note'].forEach(id => { if (get(id)) get(id).value = ''; });
-    ['bd-stock-count','bd-prev-count'].forEach(id => { if (get(id)) get(id).value = '0'; });
     get('bd-stock-date').value = '';
     get('bd-farm').value = '';
     const mgSel = get('bd-manager');
@@ -715,14 +709,6 @@ async function editBadge(batch_id) {
           <input id="swal-stock-date" type="date" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.stock_in_date ? String(b.stock_in_date).slice(0,10) : ''}">
         </div>
         <div>
-          <label style="font-size:0.82rem;color:#555;">입식두수</label>
-          <input id="swal-stock-count" type="number" min="0" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.stock_in_count ?? 0}">
-        </div>
-        <div>
-          <label style="font-size:0.82rem;color:#555;">전월이월두수</label>
-          <input id="swal-prev-count" type="number" min="0" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.prev_month_count ?? 0}">
-        </div>
-        <div>
           <label style="font-size:0.82rem;color:#555;">메모</label>
           <input id="swal-note" class="swal2-input" style="margin:0;width:100%;font-size:0.9rem;" value="${b.note || ''}">
         </div>
@@ -732,14 +718,12 @@ async function editBadge(batch_id) {
     confirmButtonText: '저장',
     cancelButtonText: '취소',
     preConfirm: () => ({
-      badge_name:       document.getElementById('swal-badge-name').value.trim(),
-      manager:          document.getElementById('swal-manager').value.trim(),
-      stock_in_date:    document.getElementById('swal-stock-date').value || null,
-      stock_in_count:   parseInt(document.getElementById('swal-stock-count').value) || 0,
-      prev_month_count: parseInt(document.getElementById('swal-prev-count').value) || 0,
-      note:             document.getElementById('swal-note').value.trim() || null,
-      farm_id:          b.farm_id,
-      status:           b.status,
+      badge_name:    document.getElementById('swal-badge-name').value.trim(),
+      manager:       document.getElementById('swal-manager').value.trim(),
+      stock_in_date: document.getElementById('swal-stock-date').value || null,
+      note:          document.getElementById('swal-note').value.trim() || null,
+      farm_id:       b.farm_id,
+      status:        b.status,
     }),
   });
 

@@ -67,7 +67,8 @@ async function loadStatus() {
       return `<tr>
         <td style="font-weight:700;">${b.badge_name}</td>
         <td>${b.manager || "-"}</td>
-        <td>${fmtDate(b.stock_in_date)}</td>
+        <td>${fmtDate(b.last_transfer_date)}</td>
+        <td>${fmtDate(b.last_event_date)}</td>
         <td>${fmt(b.stock_in_count)}</td>
         <td>${fmt(b.total_transfer_in)}</td>
         <td class="num-red">${fmt(b.total_deaths)}</td>
@@ -79,7 +80,7 @@ async function loadStatus() {
 
     tfoot.innerHTML = `
       <td style="font-weight:700;">합계</td>
-      <td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td>
       <td>${fmt(totIn)}</td>
       <td class="num-red">${fmt(totD)}</td>
       <td class="num-orange">${fmt(totC)}</td>
