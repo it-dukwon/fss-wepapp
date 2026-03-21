@@ -234,10 +234,13 @@ module.exports = function settlementRoutes({ runPgQuery }) {
         });
       }
 
-      // M열 이후(13열~) 셀 값 제거
+      // M열 이후(13열~) 셀 값 및 스타일 제거
       ws.eachRow((row) => {
-        row.eachCell({ includeEmpty: false }, (cell) => {
-          if (cell.col >= 13) cell.value = null;
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          if (cell.col >= 13) {
+            cell.value = null;
+            cell.style = {};
+          }
         });
       });
 
