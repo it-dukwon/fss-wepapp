@@ -163,6 +163,235 @@ module.exports = function livestockRoutes({ runPgQuery }) {
   });
 
   // ─────────────────────────────────────────
+  // 파스 목록 (현황)
+  // GET /api/livestock/passes?view=latest|all
+  // ─────────────────────────────────────────
+  router.get("/passes", async (req, res) => {
+    const view = req.query.view || "latest";
+    try {
+      const passFilter = view === "all" ? "" : "AND p.status = 'active'";
+      const sql = `
+        WITH pass_agg AS (
+          SELECT
+            e.pass_id,
+            COALESCE(SUM(e.transfer_in), 0)::INT AS total_transfer_in,
+            COALESCE(SUM(e.deaths),      0)::INT AS total_deaths,
+            COALESCE(SUM(e.culled),      0)::INT AS total_culled,
+            COALESCE(SUM(e.shipped),     0)::INT AS total_shipped,
+            COALESCE(SUM(e.deducted),    0)::INT AS total_deducted,
+            MAX(e.event_date) AS last_event_date
+          FROM livestock_events e
+          WHERE e.pass_id IS NOT NULL
+          GROUP BY e.pass_id
+        ),
+        batches_with_pass AS (
+          SELECT DISTINCT batch_id FROM livestock_passes
+        ),
+        batch_agg AS (
+          SELECT
+            e.batch_id,
+            COALESCE(SUM(e.transfer_in), 0)::INT AS total_transfer_in,
+            COALESCE(SUM(e.deaths),      0)::INT AS total_deaths,
+            COALESCE(SUM(e.culled),      0)::INT AS total_culled,
+            COALESCE(SUM(e.shipped),     0)::INT AS total_shipped,
+            COALESCE(SUM(e.deducted),    0)::INT AS total_deducted,
+            MAX(e.event_date) AS last_event_date
+          FROM livestock_events e
+          WHERE e.pass_id IS NULL
+          GROUP BY e.batch_id
+        )
+        SELECT
+          p.pass_id, p.pass_name, p.pass_no, p.year_yy,
+          p.status    AS pass_status,
+          p.start_count, p.started_at, p.ended_at,
+          b.batch_id, b.badge_name, b.manager,
+          f."농장명" AS farm_name,
+          COALESCE(a.total_transfer_in, 0) AS total_transfer_in,
+          COALESCE(a.total_deaths,      0) AS total_deaths,
+          COALESCE(a.total_culled,      0) AS total_culled,
+          COALESCE(a.total_shipped,     0) AS total_shipped,
+          COALESCE(a.total_deducted,    0) AS total_deducted,
+          a.last_event_date,
+          (p.start_count
+           + COALESCE(a.total_transfer_in, 0)
+           - COALESCE(a.total_deaths,      0)
+           - COALESCE(a.total_culled,      0)
+           - COALESCE(a.total_shipped,     0)
+           - COALESCE(a.total_deducted,    0)
+          )::INT AS current_count
+        FROM livestock_passes p
+        JOIN livestock_batches b ON b.batch_id = p.batch_id
+        LEFT JOIN list_farms f ON f."농장ID" = b.farm_id
+        LEFT JOIN pass_agg a ON a.pass_id = p.pass_id
+        WHERE b.status = 'active' ${passFilter}
+
+        UNION ALL
+
+        -- 파스가 없는 배치 (기존 방식)
+        SELECT
+          NULL AS pass_id, NULL AS pass_name, NULL AS pass_no, NULL AS year_yy,
+          'batch' AS pass_status,
+          (b.prev_month_count + b.stock_in_count)::INT AS start_count,
+          b.stock_in_date AS started_at, NULL AS ended_at,
+          b.batch_id, b.badge_name, b.manager,
+          f."농장명" AS farm_name,
+          COALESCE(a.total_transfer_in, 0) AS total_transfer_in,
+          COALESCE(a.total_deaths,      0) AS total_deaths,
+          COALESCE(a.total_culled,      0) AS total_culled,
+          COALESCE(a.total_shipped,     0) AS total_shipped,
+          COALESCE(a.total_deducted,    0) AS total_deducted,
+          a.last_event_date,
+          (b.prev_month_count + b.stock_in_count
+           + COALESCE(a.total_transfer_in, 0)
+           - COALESCE(a.total_deaths,      0)
+           - COALESCE(a.total_culled,      0)
+           - COALESCE(a.total_shipped,     0)
+           - COALESCE(a.total_deducted,    0)
+          )::INT AS current_count
+        FROM livestock_batches b
+        LEFT JOIN list_farms f ON f."농장ID" = b.farm_id
+        LEFT JOIN batch_agg a ON a.batch_id = b.batch_id
+        WHERE b.status = 'active'
+          AND b.batch_id NOT IN (SELECT batch_id FROM batches_with_pass)
+
+        ORDER BY badge_name, year_yy NULLS LAST, pass_no NULLS LAST
+      `;
+      const result = await runPgQuery(sql);
+      res.json({ success: true, passes: result.rows });
+    } catch (err) {
+      console.error("Get passes error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 배치별 파스 목록 (이벤트 입력 드롭다운용)
+  // GET /api/livestock/passes/for-batch/:batch_id
+  router.get("/passes/for-batch/:batch_id", async (req, res) => {
+    const batch_id = parseInt(req.params.batch_id, 10);
+    if (isNaN(batch_id)) return res.status(400).json({ error: "Invalid batch_id" });
+    try {
+      const result = await runPgQuery(
+        `SELECT pass_id, pass_name, pass_no, status
+         FROM livestock_passes
+         WHERE batch_id = $1
+         ORDER BY year_yy, pass_no`,
+        [batch_id]
+      );
+      res.json({ success: true, passes: result.rows });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 첫 파스 생성
+  // POST /api/livestock/passes
+  router.post("/passes", async (req, res) => {
+    const { batch_id, note } = req.body;
+    if (!batch_id) return res.status(400).json({ error: "batch_id is required" });
+    try {
+      const batchRes = await runPgQuery(
+        `SELECT batch_id, badge_name, stock_in_count, prev_month_count FROM livestock_batches WHERE batch_id = $1`,
+        [Number(batch_id)]
+      );
+      const batch = batchRes.rows[0];
+      if (!batch) return res.status(404).json({ success: false, error: "배치를 찾을 수 없습니다." });
+
+      const existRes = await runPgQuery(
+        `SELECT COUNT(*) AS cnt FROM livestock_passes WHERE batch_id = $1`,
+        [Number(batch_id)]
+      );
+      if (parseInt(existRes.rows[0].cnt) > 0) {
+        return res.status(400).json({ success: false, error: "이미 파스가 있습니다. 다음 파스로 전환해 주세요." });
+      }
+
+      const yearYY = new Date().getFullYear() % 100;
+      const passNo = 1;
+      const passName = `${batch.badge_name}-${String(yearYY).padStart(2, "0")}-${passNo}`;
+      const startCount = (batch.prev_month_count || 0) + (batch.stock_in_count || 0);
+
+      const passRes = await runPgQuery(
+        `INSERT INTO livestock_passes (batch_id, pass_name, pass_no, year_yy, start_count, status, started_at, note)
+         VALUES ($1, $2, $3, $4, $5, 'active', CURRENT_DATE, $6)
+         RETURNING pass_id, pass_name`,
+        [Number(batch_id), passName, passNo, yearYY, startCount, note || null]
+      );
+      const newPass = passRes.rows[0];
+
+      // 기존 이벤트를 이 파스에 연결
+      await runPgQuery(
+        `UPDATE livestock_events SET pass_id = $1 WHERE batch_id = $2 AND pass_id IS NULL`,
+        [newPass.pass_id, Number(batch_id)]
+      );
+
+      auditLog(req, "INSERT", "livestock_pass", newPass.pass_id, `파스 생성: ${passName}`);
+      res.json({ success: true, pass: newPass });
+    } catch (err) {
+      console.error("Create pass error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 다음 파스로 전환
+  // POST /api/livestock/passes/:id/next
+  router.post("/passes/:id/next", async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+    try {
+      const passRes = await runPgQuery(
+        `SELECT p.*, b.badge_name FROM livestock_passes p
+         JOIN livestock_batches b ON b.batch_id = p.batch_id
+         WHERE p.pass_id = $1`,
+        [id]
+      );
+      const pass = passRes.rows[0];
+      if (!pass) return res.status(404).json({ success: false, error: "파스를 찾을 수 없습니다." });
+      if (pass.status !== "active") return res.status(400).json({ success: false, error: "활성 파스가 아닙니다." });
+
+      // 현재 파스 잔여두수 계산
+      const aggRes = await runPgQuery(
+        `SELECT
+           COALESCE(SUM(transfer_in), 0)::INT AS total_transfer_in,
+           COALESCE(SUM(deaths),      0)::INT AS total_deaths,
+           COALESCE(SUM(culled),      0)::INT AS total_culled,
+           COALESCE(SUM(shipped),     0)::INT AS total_shipped,
+           COALESCE(SUM(deducted),    0)::INT AS total_deducted
+         FROM livestock_events WHERE pass_id = $1`,
+        [id]
+      );
+      const agg = aggRes.rows[0];
+      const currentCount = pass.start_count
+        + agg.total_transfer_in - agg.total_deaths
+        - agg.total_culled - agg.total_shipped - agg.total_deducted;
+
+      // 현재 파스 완료
+      await runPgQuery(
+        `UPDATE livestock_passes SET status = 'completed', ended_at = CURRENT_DATE WHERE pass_id = $1`,
+        [id]
+      );
+
+      // 새 파스 생성
+      const yearYY = new Date().getFullYear() % 100;
+      const newPassNo = pass.pass_no + 1;
+      const newPassName = `${pass.badge_name}-${String(yearYY).padStart(2, "0")}-${newPassNo}`;
+
+      const newPassRes = await runPgQuery(
+        `INSERT INTO livestock_passes (batch_id, pass_name, pass_no, year_yy, start_count, status, started_at)
+         VALUES ($1, $2, $3, $4, $5, 'active', CURRENT_DATE)
+         RETURNING pass_id, pass_name, start_count`,
+        [pass.batch_id, newPassName, newPassNo, yearYY, currentCount]
+      );
+      const newPass = newPassRes.rows[0];
+
+      auditLog(req, "INSERT", "livestock_pass", newPass.pass_id,
+        `파스 전환: ${pass.pass_name} → ${newPassName} (이월두수: ${currentCount})`);
+      res.json({ success: true, new_pass: newPass, prev_count: currentCount });
+    } catch (err) {
+      console.error("Next pass error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────
   // 이벤트 목록
   // GET /api/livestock/events?batch_id=&date_from=&date_to=
   // ─────────────────────────────────────────
@@ -179,9 +408,10 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
       const result = await runPgQuery(
-        `SELECT e.*, b.badge_name
+        `SELECT e.*, b.badge_name, p.pass_name
          FROM livestock_events e
          JOIN livestock_batches b ON b.batch_id = e.batch_id
+         LEFT JOIN livestock_passes p ON p.pass_id = e.pass_id
          ${where}
          ORDER BY e.event_date DESC, e.batch_id`,
         params
@@ -198,7 +428,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
   router.post("/events", async (req, res) => {
     try {
       const {
-        batch_id, event_date, event_type,
+        batch_id, pass_id, event_date, event_type,
         transfer_in, deaths, culled, shipped, deducted,
         stock_weight, ship_weight, death_type,
         distributor, slaughterhouse, meat_processor, note,
@@ -212,6 +442,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const ded = Number(deducted)    || 0;
       const sw  = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
       const shw = ship_weight  != null && ship_weight  !== "" ? Number(ship_weight)  : null;
+      const pid = pass_id ? Number(pass_id) : null;
 
       if (ti === 0 && d === 0 && c === 0 && s === 0 && ded === 0) {
         return res.status(400).json({ error: "하나 이상의 두수를 입력하세요." });
@@ -219,12 +450,12 @@ module.exports = function livestockRoutes({ runPgQuery }) {
 
       const result = await runPgQuery(
         `INSERT INTO livestock_events
-           (batch_id, event_date, event_type, transfer_in, deaths, culled, shipped, deducted,
+           (batch_id, pass_id, event_date, event_type, transfer_in, deaths, culled, shipped, deducted,
             stock_weight, ship_weight, death_type, distributor, slaughterhouse, meat_processor, note)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
          RETURNING event_id`,
         [
-          Number(batch_id), event_date, event_type || null,
+          Number(batch_id), pid, event_date, event_type || null,
           ti, d, c, s, ded,
           sw, shw, death_type || null,
           distributor || null, slaughterhouse || null, meat_processor || null,

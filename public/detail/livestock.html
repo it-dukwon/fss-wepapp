@@ -49,28 +49,33 @@
   <div id="tab-status" class="ls-tab-content active">
     <div class="ls-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h3 class="ls-section-title" style="margin:0;">활성 뱃지별 현재 사육두수</h3>
-        <button class="ls-btn ls-btn-gray" onclick="loadStatus()"><i class="fa-solid fa-rotate-right"></i> 새로고침</button>
+        <h3 class="ls-section-title" style="margin:0;">파스별 사육두수 현황</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="btn-view-latest" class="ls-btn ls-btn-primary" onclick="loadPassStatus('latest')">최신 파스 현황</button>
+          <button id="btn-view-all"    class="ls-btn ls-btn-gray"    onclick="loadPassStatus('all')">전체 현황</button>
+          <button class="ls-btn ls-btn-gray" onclick="loadPassStatus()"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
       </div>
       <div class="ls-table-wrap">
         <table class="ls-table" id="status-table">
           <thead>
             <tr>
               <th>뱃지명</th>
+              <th>파스명</th>
               <th>관리자</th>
-              <th>입식일</th>
-              <th>최종수정일</th>
+              <th>시작일</th>
+              <th>최종이벤트일</th>
               <th>입식두수</th>
-              <th>입식평균체중</th>
-              <th>누적입식두수</th>
               <th>폐사(누계)</th>
               <th>도태(누계)</th>
               <th>출하(누계)</th>
               <th>현재 사육두수</th>
+              <th>상태</th>
+              <th>파스 전환</th>
             </tr>
           </thead>
           <tbody id="status-tbody">
-            <tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="12" class="ls-empty">로딩 중...</td></tr>
           </tbody>
           <tfoot>
             <tr id="status-tfoot" style="background:#f0f4f0;font-weight:700;"></tr>
@@ -92,7 +97,7 @@
           <button class="ls-btn ls-btn-primary" onclick="submitEvent()"><i class="fa-solid fa-plus"></i> 등록</button>
         </div>
       </div>
-      <!-- 공통: 날짜, 뱃지, 이벤트 유형 -->
+      <!-- 공통: 날짜, 뱃지, 파스, 이벤트 유형 -->
       <div class="ls-form-grid">
         <div class="ls-form-group">
           <label>날짜 *</label>
@@ -100,9 +105,13 @@
         </div>
         <div class="ls-form-group">
           <label>뱃지 *</label>
-          <select id="ev-batch"></select>
+          <select id="ev-batch" onchange="loadPassSelect(this.value)"></select>
         </div>
-        <div class="ls-form-group" style="grid-column:span 2;">
+        <div class="ls-form-group">
+          <label>파스</label>
+          <select id="ev-pass"><option value="">파스 없음</option></select>
+        </div>
+        <div class="ls-form-group" style="grid-column:span 3;">
           <label>이벤트 유형 *</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button type="button" class="ev-type-btn active" data-type="stock_in" onclick="selectEventType('stock_in')">입식</button>
@@ -202,13 +211,13 @@
         <table class="ls-table" id="events-table">
           <thead>
             <tr>
-              <th>날짜</th><th>뱃지명</th><th>유형</th>
+              <th>날짜</th><th>뱃지명</th><th>파스</th><th>유형</th>
               <th>두수</th><th>체중(kg)</th><th>추가정보</th>
               <th>메모</th><th>삭제</th>
             </tr>
           </thead>
           <tbody id="events-tbody">
-            <tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>

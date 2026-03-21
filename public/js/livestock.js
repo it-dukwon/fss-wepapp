@@ -45,60 +45,131 @@ function toast(icon, title) {
 }
 
 // ─────────────────────────────────────────
-// 탭 1: 현황
+// 탭 1: 현황 (파스별)
 // ─────────────────────────────────────────
-async function loadStatus() {
+let currentStatusView = "latest";
+
+async function loadPassStatus(view) {
+  if (view) currentStatusView = view;
+
+  const btnLatest = document.getElementById("btn-view-latest");
+  const btnAll    = document.getElementById("btn-view-all");
+  if (btnLatest) btnLatest.className = `ls-btn ${currentStatusView === "latest" ? "ls-btn-primary" : "ls-btn-gray"}`;
+  if (btnAll)    btnAll.className    = `ls-btn ${currentStatusView === "all"    ? "ls-btn-primary" : "ls-btn-gray"}`;
+
   const tbody = document.getElementById("status-tbody");
   const tfoot = document.getElementById("status-tfoot");
-  tbody.innerHTML = `<tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="12" class="ls-empty">로딩 중...</td></tr>`;
+
   try {
-    const { batches } = await apiFetch("/batches?status=active");
-    if (!batches.length) {
-      tbody.innerHTML = `<tr><td colspan="11" class="ls-empty">활성 뱃지 없음</td></tr>`;
+    const { passes } = await apiFetch(`/passes?view=${currentStatusView}`);
+    if (!passes.length) {
+      tbody.innerHTML = `<tr><td colspan="12" class="ls-empty">데이터 없음</td></tr>`;
       tfoot.innerHTML = "";
       return;
     }
 
-    let totRecent = 0, totCumul = 0, totD = 0, totC = 0, totS = 0, totCur = 0;
-    tbody.innerHTML = batches.map((b) => {
-      totRecent += b.recent_stock_in;
-      totCumul  += b.cumulative_stock_in;
-      totD      += b.total_deaths;
-      totC      += b.total_culled;
-      totS      += b.total_shipped;
-      totCur    += b.current_count;
-      const avgWt = b.avg_stock_weight != null ? Number(b.avg_stock_weight).toFixed(1) + " kg" : "-";
+    let totTransfer = 0, totDeaths = 0, totCulled = 0, totShipped = 0, totCur = 0;
+    tbody.innerHTML = passes.map((p) => {
+      totTransfer += (p.total_transfer_in || 0);
+      totDeaths   += (p.total_deaths || 0);
+      totCulled   += (p.total_culled || 0);
+      totShipped  += (p.total_shipped || 0);
+      totCur      += (p.current_count || 0);
+
+      const stockIn = (p.start_count || 0) + (p.total_transfer_in || 0);
+
+      let statusBadge, actionBtn;
+      if (p.pass_status === "batch") {
+        statusBadge = `<span style="color:#888;font-size:0.82rem;">파스 미사용</span>`;
+        actionBtn   = `<button class="ls-btn ls-btn-teal" style="padding:3px 10px;font-size:0.82rem;"
+                         onclick="createFirstPass(${p.batch_id}, '${p.badge_name.replace(/'/g, "\\'")}')">파스 생성</button>`;
+      } else if (p.pass_status === "active") {
+        statusBadge = `<span class="ev-badge" style="background:#d4edda;color:#155724;">활성</span>`;
+        actionBtn   = `<button class="ls-btn ls-btn-primary" style="padding:3px 10px;font-size:0.82rem;"
+                         onclick="nextPass(${p.pass_id}, '${p.pass_name.replace(/'/g, "\\'")}', ${p.current_count})">다음 파스 →</button>`;
+      } else {
+        statusBadge = `<span class="ev-badge" style="background:#e2e3e5;color:#383d41;">완료</span>`;
+        actionBtn   = `-`;
+      }
+
       return `<tr>
-        <td style="font-weight:700;">${b.badge_name}</td>
-        <td>${b.manager || "-"}</td>
-        <td>${fmtDate(b.last_transfer_date)}</td>
-        <td>${fmtDate(b.last_event_date)}</td>
-        <td>${fmt(b.recent_stock_in)}</td>
-        <td>${avgWt}</td>
-        <td>${fmt(b.cumulative_stock_in)}</td>
-        <td class="num-red">${fmt(b.total_deaths)}</td>
-        <td class="num-orange">${fmt(b.total_culled)}</td>
-        <td>${fmt(b.total_shipped)}</td>
-        <td class="num-big">${fmt(b.current_count)}</td>
+        <td style="font-weight:700;">${p.badge_name}</td>
+        <td style="font-weight:600;color:#1a73a7;">${p.pass_name || "-"}</td>
+        <td>${p.manager || "-"}</td>
+        <td>${fmtDate(p.started_at)}</td>
+        <td>${fmtDate(p.last_event_date)}</td>
+        <td>${fmt(stockIn)}</td>
+        <td class="num-red">${fmt(p.total_deaths)}</td>
+        <td class="num-orange">${fmt(p.total_culled)}</td>
+        <td>${fmt(p.total_shipped)}</td>
+        <td class="num-big">${fmt(p.current_count)}</td>
+        <td>${statusBadge}</td>
+        <td>${actionBtn}</td>
       </tr>`;
     }).join("");
 
     tfoot.innerHTML = `
       <td style="font-weight:700;">합계</td>
-      <td></td><td></td><td></td>
-      <td>${fmt(totRecent)}</td>
-      <td></td>
-      <td>${fmt(totCumul)}</td>
-      <td class="num-red">${fmt(totD)}</td>
-      <td class="num-orange">${fmt(totC)}</td>
-      <td>${fmt(totS)}</td>
+      <td></td><td></td><td></td><td></td>
+      <td>${fmt(totTransfer)}</td>
+      <td class="num-red">${fmt(totDeaths)}</td>
+      <td class="num-orange">${fmt(totCulled)}</td>
+      <td>${fmt(totShipped)}</td>
       <td class="num-big">${fmt(totCur)}</td>
+      <td></td><td></td>
     `;
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="11" class="ls-empty">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="ls-empty">${err.message}</td></tr>`;
   }
 }
+
+// 첫 파스 생성
+async function createFirstPass(batch_id, badge_name) {
+  const { isConfirmed } = await Swal.fire({
+    title: "첫 파스 생성",
+    html: `<p>"<b>${badge_name}</b>"의 첫 파스를 생성합니다.<br>기존 이벤트는 이 파스에 자동으로 포함됩니다.</p>`,
+    showCancelButton: true,
+    confirmButtonText: "생성",
+    cancelButtonText: "취소",
+    confirmButtonColor: "#146C43",
+  });
+  if (!isConfirmed) return;
+  try {
+    const { pass } = await apiFetch("/passes", { method: "POST", body: JSON.stringify({ batch_id }) });
+    toast("success", `${pass.pass_name} 파스가 생성되었습니다`);
+    loadPassStatus();
+  } catch (err) {
+    Swal.fire({ icon: "error", title: err.message });
+  }
+}
+
+// 다음 파스로 전환
+async function nextPass(pass_id, pass_name, current_count) {
+  const { isConfirmed } = await Swal.fire({
+    icon: current_count > 0 ? "warning" : "question",
+    title: "다음 파스로 전환",
+    html: current_count > 0
+      ? `<p>현재 잔여두수 <b>${fmt(current_count)}두</b>가 다음 파스로 이월됩니다.<br><br>"<b>${pass_name}</b>" 파스를 완료하고 다음 파스를 생성할까요?</p>`
+      : `<p>"<b>${pass_name}</b>" 파스를 완료하고 다음 파스를 생성할까요?</p>`,
+    showCancelButton: true,
+    confirmButtonText: "다음 파스 생성",
+    cancelButtonText: "취소",
+    confirmButtonColor: "#1a73a7",
+  });
+  if (!isConfirmed) return;
+  try {
+    const { new_pass } = await apiFetch(`/passes/${pass_id}/next`, { method: "POST", body: JSON.stringify({}) });
+    toast("success", `${new_pass.pass_name} 파스가 생성되었습니다`);
+    loadPassStatus();
+  } catch (err) {
+    Swal.fire({ icon: "error", title: err.message });
+  }
+}
+
+// 기존 loadStatus는 loadPassStatus로 연결
+function loadStatus() { loadPassStatus(); }
 
 // ─────────────────────────────────────────
 // 탭 2: 이벤트 입력
@@ -127,7 +198,30 @@ async function loadBatchSelect() {
       const hasAll = id === "ev-filter-batch";
       el.innerHTML = (hasAll ? `<option value="">전체</option>` : "") + opts;
     });
+
+    // 기본 선택 배치의 파스 로드
+    const evBatch = document.getElementById("ev-batch");
+    if (evBatch?.value) loadPassSelect(evBatch.value);
   } catch (_) {}
+}
+
+async function loadPassSelect(batch_id) {
+  const el = document.getElementById("ev-pass");
+  if (!el) return;
+  if (!batch_id) { el.innerHTML = `<option value="">파스 없음</option>`; return; }
+  try {
+    const { passes } = await apiFetch(`/passes/for-batch/${batch_id}`);
+    if (!passes.length) {
+      el.innerHTML = `<option value="">파스 없음</option>`;
+      return;
+    }
+    el.innerHTML = passes.map((p) => {
+      const label = p.status === "active" ? `${p.pass_name} (활성)` : p.pass_name;
+      return `<option value="${p.pass_id}" ${p.status === "active" ? "selected" : ""}>${label}</option>`;
+    }).join("");
+  } catch (_) {
+    el.innerHTML = `<option value="">파스 없음</option>`;
+  }
 }
 
 async function submitEvent() {
@@ -139,7 +233,8 @@ async function submitEvent() {
     return Swal.fire({ icon: "warning", title: "뱃지와 날짜는 필수입니다." });
   }
 
-  let body = { batch_id, event_date, event_type: currentEventType, note: note || null };
+  const pass_id = document.getElementById("ev-pass")?.value || null;
+  let body = { batch_id, pass_id: pass_id || undefined, event_date, event_type: currentEventType, note: note || null };
 
   if (currentEventType === "stock_in") {
     const transfer_in  = Number(document.getElementById("ev-transfer").value) || 0;
@@ -211,7 +306,7 @@ function resetEventForm() {
 
 async function loadEvents() {
   const tbody = document.getElementById("events-tbody");
-  tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>`;
 
   const batch_id  = document.getElementById("ev-filter-batch")?.value || "";
   const date_from = document.getElementById("ev-filter-from")?.value  || "";
@@ -225,7 +320,7 @@ async function loadEvents() {
   try {
     const { events } = await apiFetch("/events?" + params.toString());
     if (!events.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">이벤트 없음</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">이벤트 없음</td></tr>`;
       return;
     }
     tbody.innerHTML = events.map((e) => {
@@ -266,6 +361,7 @@ async function loadEvents() {
       return `<tr>
         <td>${fmtDate(e.event_date)}</td>
         <td style="font-weight:700;">${e.badge_name}</td>
+        <td style="font-size:0.82rem;color:#1a73a7;">${e.pass_name || "-"}</td>
         <td>${badge}</td>
         <td>${count}</td>
         <td>${weight}</td>

@@ -2,6 +2,23 @@
 -- 실행 후 제거하거나 별도 보관. 이미 적용된 항목은 주석 처리.
 -- 최근 변경순 (위가 최신)
 
+-- [2026-03-21] 파스(사이클) 관리 테이블 신설
+CREATE TABLE IF NOT EXISTS livestock_passes (
+  pass_id     SERIAL PRIMARY KEY,
+  batch_id    INT NOT NULL REFERENCES livestock_batches(batch_id),
+  pass_name   VARCHAR(100) NOT NULL,   -- 예: 덕원농장A-26-1
+  pass_no     SMALLINT NOT NULL,       -- 1, 2, 3 ...
+  year_yy     SMALLINT NOT NULL,       -- 연도 끝 2자리 (26)
+  start_count INT NOT NULL DEFAULT 0,  -- 파스 시작 두수 (이전 파스 잔여)
+  status      VARCHAR(20) NOT NULL DEFAULT 'active',
+  started_at  DATE,
+  ended_at    DATE,
+  note        TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE livestock_events ADD COLUMN IF NOT EXISTS pass_id INT REFERENCES livestock_passes(pass_id);
+
 -- [2026-03-21] 공제 이벤트 타입 추가
 ALTER TABLE livestock_events ADD COLUMN IF NOT EXISTS deducted INT DEFAULT 0;
 
