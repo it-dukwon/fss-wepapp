@@ -4,6 +4,14 @@ const FARM_API    = '/api/farms';
 const CO_API      = '/api/farms/feed-companies';
 const MG_API      = '/api/farms/managers';
 
+// 401(세션만료) 시 로그인 페이지로 이동
+const _origFetch = window.fetch.bind(window);
+window.fetch = async function(...args) {
+  const res = await _origFetch(...args);
+  if (res.status === 401) { location.href = '/login'; }
+  return res;
+};
+
 // ── 유틸 ──────────────────────────────────────────────────
 function toDateInput(s) {
   if (!s) return '';

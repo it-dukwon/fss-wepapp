@@ -23,6 +23,7 @@ async function apiFetch(path, opts = {}) {
     headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
     ...opts,
   });
+  if (res.status === 401) { location.href = "/login"; return; }
   const json = await res.json();
   if (!res.ok || !json.success) throw new Error(json.error || "서버 오류");
   return json;
