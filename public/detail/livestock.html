@@ -11,9 +11,12 @@
       border-radius: 20px; cursor: pointer; font-size: 0.9rem;
       font-weight: 600; transition: all 0.15s;
     }
-    .ev-type-btn.active[data-type="stock_in"] { background:#146C43; color:#fff; border-color:#146C43; }
-    .ev-type-btn.active[data-type="death"]    { background:#c0392b; color:#fff; border-color:#c0392b; }
-    .ev-type-btn.active[data-type="shipping"] { background:#1a73a7; color:#fff; border-color:#1a73a7; }
+    .ev-type-btn[data-type="stock_in"] { border-color:#146C43; color:#146C43; }
+    .ev-type-btn[data-type="death"]    { border-color:#c0392b; color:#c0392b; }
+    .ev-type-btn[data-type="shipping"] { border-color:#1a73a7; color:#1a73a7; }
+    .ev-type-btn.active[data-type="stock_in"] { background:#146C43; color:#fff; }
+    .ev-type-btn.active[data-type="death"]    { background:#c0392b; color:#fff; }
+    .ev-type-btn.active[data-type="shipping"] { background:#1a73a7; color:#fff; }
     .ev-badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:0.8rem; font-weight:700; }
     .ev-badge-in   { background:#d4edda; color:#155724; }
     .ev-badge-death { background:#f8d7da; color:#721c24; }
