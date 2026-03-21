@@ -142,7 +142,7 @@ async function loadSettlement() {
     document.getElementById("v-mortality-act").textContent    = pct(d.mortality_act);
     document.getElementById("f-std-mortality-rate").value    = d.std_rate ?? 0.03;
     document.getElementById("v-std-head").textContent         = fmt(d.std_head) + " 두";
-    document.getElementById("v-deduct-head").textContent      = fmt(d.deduct_head) + " 두";
+    document.getElementById("v-deduct-head").textContent      = fmt(d.total_deducted) + " 두";
     document.getElementById("v-settlement-count").textContent = fmt(d.settlement_count) + " 두";
 
     // ── ③ 등급 ─────────────────────────────────────
@@ -254,7 +254,6 @@ function bindCalcListeners(d) {
       document.getElementById("v-adj-dead").textContent      = fmt(adj) + " 두";
       document.getElementById("v-mortality-act").textContent = pct(act);
       document.getElementById("v-std-head").textContent      = fmt(stdH) + " 두";
-      document.getElementById("v-deduct-head").textContent   = fmt(ded) + " 두";
     };
   });
 }
@@ -333,17 +332,6 @@ function renderHistory(d) {
         <td>${fmt(running)}</td>
         <td>${outlets || ev.note || ""}</td>
       </tr>`);
-    } else if (etype === "deduction" || (!etype && ev.deducted > 0)) {
-      running -= (ev.deducted || 0);
-      rows.push(`<tr style="background:#f3f0fa;">
-        <td>${fmtDate(ev.event_date)}</td>
-        <td>공제</td>
-        <td>-</td><td>-</td><td>-</td>
-        <td>${fmt(ev.deducted)}</td>
-        <td>-</td><td>-</td><td>-</td>
-        <td>${fmt(running)}</td>
-        <td>${ev.note || ""}</td>
-      </tr>`);
     }
   }
 
@@ -358,7 +346,7 @@ function renderHistory(d) {
     <td>${fmt(d.stock_in_count)}</td>
     <td>${fmt(d.initial_stock_weight, 1)}</td>
     <td>${fmt(d.avg_stock_weight, 2)}</td>
-    <td>${fmt((d.total_dead || 0) + (d.total_deducted || 0))}</td>
+    <td>${fmt(d.total_dead || 0)}</td>
     <td>${fmt(d.total_shipped)}</td>
     <td>${fmt(d.total_ship_weight, 1)}</td>
     <td>${fmt(d.avg_ship_weight, 2)}</td>
