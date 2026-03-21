@@ -102,6 +102,19 @@ async function loadStatus() {
 // ─────────────────────────────────────────
 // 탭 2: 이벤트 입력
 // ─────────────────────────────────────────
+let currentEventType = "stock_in";
+
+function selectEventType(type) {
+  currentEventType = type;
+  document.querySelectorAll(".ev-type-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.type === type);
+  });
+  ["stock_in", "death", "shipping"].forEach((t) => {
+    const el = document.getElementById(`ev-fields-${t}`);
+    if (el) el.style.display = t === type ? "" : "none";
+  });
+}
+
 async function loadBatchSelect() {
   try {
     const { batches } = await apiFetch("/batches?status=active");
@@ -117,35 +130,53 @@ async function loadBatchSelect() {
 }
 
 async function submitEvent() {
-  const batch_id    = document.getElementById("ev-batch").value;
-  const event_date  = document.getElementById("ev-date").value;
-  const transfer_in = document.getElementById("ev-transfer").value;
-  const stock_weight = document.getElementById("ev-stock-weight").value;
-  const deaths      = document.getElementById("ev-deaths").value;
-  const culled      = document.getElementById("ev-culled").value;
-  const shipped     = document.getElementById("ev-shipped").value;
-  const note        = document.getElementById("ev-note").value.trim();
+  const batch_id   = document.getElementById("ev-batch").value;
+  const event_date = document.getElementById("ev-date").value;
+  const note       = (document.getElementById("ev-note").value || "").trim();
 
   if (!batch_id || !event_date) {
     return Swal.fire({ icon: "warning", title: "뱃지와 날짜는 필수입니다." });
   }
 
+  let body = { batch_id, event_date, event_type: currentEventType, note: note || null };
+
+  if (currentEventType === "stock_in") {
+    const transfer_in  = Number(document.getElementById("ev-transfer").value) || 0;
+    const stock_weight = Number(document.getElementById("ev-stock-weight").value) || 0;
+    if (!transfer_in)  return Swal.fire({ icon: "warning", title: "입식두수를 입력하세요." });
+    if (!stock_weight) return Swal.fire({ icon: "warning", title: "입식 총체중을 입력하세요." });
+    body = { ...body, transfer_in, stock_weight };
+
+  } else if (currentEventType === "death") {
+    const death_type = document.getElementById("ev-death-type").value;
+    const count      = Number(document.getElementById("ev-death-count").value) || 0;
+    if (!count) return Swal.fire({ icon: "warning", title: "두수를 입력하세요." });
+    body = {
+      ...body, death_type,
+      deaths: death_type === "폐사" ? count : 0,
+      culled: death_type === "도태" ? count : 0,
+    };
+
+  } else if (currentEventType === "shipping") {
+    const shipped        = Number(document.getElementById("ev-shipped").value) || 0;
+    const ship_weight    = Number(document.getElementById("ev-ship-weight").value) || 0;
+    if (!shipped)      return Swal.fire({ icon: "warning", title: "출하두수를 입력하세요." });
+    if (!ship_weight)  return Swal.fire({ icon: "warning", title: "출하 총체중을 입력하세요." });
+    body = {
+      ...body, shipped, ship_weight,
+      distributor:    document.getElementById("ev-distributor").value.trim()    || null,
+      slaughterhouse: document.getElementById("ev-slaughterhouse").value.trim() || null,
+      meat_processor: document.getElementById("ev-meat-processor").value.trim() || null,
+    };
+  }
+
   const msg = document.getElementById("ev-msg");
   msg.textContent = "저장 중...";
-
   try {
-    await apiFetch("/events", {
-      method: "POST",
-      body: JSON.stringify({ batch_id, event_date, transfer_in, stock_weight: stock_weight || null, deaths, culled, shipped, note }),
-    });
+    await apiFetch("/events", { method: "POST", body: JSON.stringify(body) });
     toast("success", "저장되었습니다");
     msg.textContent = "";
-    // 입력값 초기화 (날짜/뱃지는 유지)
-    ["ev-transfer", "ev-deaths", "ev-culled", "ev-shipped"].forEach((id) => {
-      document.getElementById(id).value = "0";
-    });
-    document.getElementById("ev-stock-weight").value = "";
-    document.getElementById("ev-note").value = "";
+    resetEventForm();
     loadEvents();
   } catch (err) {
     msg.textContent = "";
@@ -153,13 +184,27 @@ async function submitEvent() {
   }
 }
 
+function resetEventForm() {
+  if (currentEventType === "stock_in") {
+    document.getElementById("ev-transfer").value    = "";
+    document.getElementById("ev-stock-weight").value = "";
+  } else if (currentEventType === "death") {
+    document.getElementById("ev-death-count").value = "";
+    document.getElementById("ev-death-type").value  = "폐사";
+  } else if (currentEventType === "shipping") {
+    ["ev-shipped", "ev-ship-weight", "ev-distributor", "ev-slaughterhouse", "ev-meat-processor"]
+      .forEach((id) => { document.getElementById(id).value = ""; });
+  }
+  document.getElementById("ev-note").value = "";
+}
+
 async function loadEvents() {
   const tbody = document.getElementById("events-tbody");
-  tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>`;
 
   const batch_id  = document.getElementById("ev-filter-batch")?.value || "";
-  const date_from = document.getElementById("ev-filter-from")?.value || "";
-  const date_to   = document.getElementById("ev-filter-to")?.value || "";
+  const date_from = document.getElementById("ev-filter-from")?.value  || "";
+  const date_to   = document.getElementById("ev-filter-to")?.value    || "";
 
   const params = new URLSearchParams();
   if (batch_id)  params.set("batch_id", batch_id);
@@ -169,29 +214,50 @@ async function loadEvents() {
   try {
     const { events } = await apiFetch("/events?" + params.toString());
     if (!events.length) {
-      tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">이벤트 없음</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">이벤트 없음</td></tr>`;
       return;
     }
     tbody.innerHTML = events.map((e) => {
-      const avgWt = (e.stock_weight && e.transfer_in > 0)
-        ? (Number(e.stock_weight) / e.transfer_in).toFixed(1)
-        : "-";
+      let badge, count, weight, extra;
+      const etype = e.event_type;
+
+      if (etype === "stock_in" || (!etype && e.transfer_in > 0)) {
+        badge  = `<span class="ev-badge ev-badge-in">입식</span>`;
+        count  = fmt(e.transfer_in);
+        weight = e.stock_weight != null ? Number(e.stock_weight).toLocaleString() + " kg" : "-";
+        extra  = "";
+      } else if (etype === "death" || (!etype && (e.deaths > 0 || e.culled > 0))) {
+        const dt = e.death_type || (e.deaths > 0 ? "폐사" : "도태");
+        badge  = dt === "폐사"
+          ? `<span class="ev-badge ev-badge-death">폐사</span>`
+          : `<span class="ev-badge ev-badge-cull">도태</span>`;
+        count  = fmt(e.deaths > 0 ? e.deaths : e.culled);
+        weight = "-";
+        extra  = "";
+      } else if (etype === "shipping" || (!etype && e.shipped > 0)) {
+        badge  = `<span class="ev-badge ev-badge-ship">출하</span>`;
+        count  = fmt(e.shipped);
+        weight = e.ship_weight != null ? Number(e.ship_weight).toLocaleString() + " kg" : "-";
+        extra  = [e.distributor, e.slaughterhouse, e.meat_processor].filter(Boolean).join(" / ");
+      } else {
+        badge = `<span class="ev-badge">기타</span>`;
+        count = "-"; weight = "-"; extra = "";
+      }
+
       return `<tr>
         <td>${fmtDate(e.event_date)}</td>
         <td style="font-weight:700;">${e.badge_name}</td>
-        <td>${fmt(e.transfer_in)}</td>
-        <td>${e.stock_weight != null ? Number(e.stock_weight).toLocaleString() : "-"}</td>
-        <td>${avgWt !== "-" ? avgWt + " kg" : "-"}</td>
-        <td class="num-red">${fmt(e.deaths)}</td>
-        <td class="num-orange">${fmt(e.culled)}</td>
-        <td>${fmt(e.shipped)}</td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${e.note || ""}</td>
+        <td>${badge}</td>
+        <td>${count}</td>
+        <td>${weight}</td>
+        <td style="font-size:0.85rem;color:#555;">${extra}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${e.note || ""}</td>
         <td><button class="ls-btn ls-btn-red" style="padding:3px 8px;" onclick="deleteEvent(${e.event_id})">삭제</button></td>
       </tr>`;
     }).join("");
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">${err.message}</td></tr>`;
   }
 }
 

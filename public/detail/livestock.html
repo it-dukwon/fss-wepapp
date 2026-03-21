@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>사육두수 관리</title>
   <link rel="stylesheet" href="../styles.css" />
+  <style>
+    .ev-type-btn {
+      padding: 6px 20px; border: 2px solid #ccc; background: #fff;
+      border-radius: 20px; cursor: pointer; font-size: 0.9rem;
+      font-weight: 600; transition: all 0.15s;
+    }
+    .ev-type-btn.active[data-type="stock_in"] { background:#146C43; color:#fff; border-color:#146C43; }
+    .ev-type-btn.active[data-type="death"]    { background:#c0392b; color:#fff; border-color:#c0392b; }
+    .ev-type-btn.active[data-type="shipping"] { background:#1a73a7; color:#fff; border-color:#1a73a7; }
+    .ev-badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:0.8rem; font-weight:700; }
+    .ev-badge-in   { background:#d4edda; color:#155724; }
+    .ev-badge-death { background:#f8d7da; color:#721c24; }
+    .ev-badge-cull  { background:#fff3cd; color:#856404; }
+    .ev-badge-ship  { background:#cce5ff; color:#004085; }
+  </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
@@ -72,6 +87,7 @@
           <button class="ls-btn ls-btn-primary" onclick="submitEvent()"><i class="fa-solid fa-plus"></i> 등록</button>
         </div>
       </div>
+      <!-- 공통: 날짜, 뱃지, 이벤트 유형 -->
       <div class="ls-form-grid">
         <div class="ls-form-group">
           <label>날짜 *</label>
@@ -81,26 +97,69 @@
           <label>뱃지 *</label>
           <select id="ev-batch"></select>
         </div>
+        <div class="ls-form-group" style="grid-column:span 2;">
+          <label>이벤트 유형 *</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="ev-type-btn active" data-type="stock_in" onclick="selectEventType('stock_in')">입식</button>
+            <button type="button" class="ev-type-btn" data-type="death" onclick="selectEventType('death')">도폐사</button>
+            <button type="button" class="ev-type-btn" data-type="shipping" onclick="selectEventType('shipping')">출하</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 입식 필드 -->
+      <div id="ev-fields-stock_in" class="ls-form-grid">
         <div class="ls-form-group">
-          <label>전입두수</label>
-          <input type="number" id="ev-transfer" min="0" value="0" />
+          <label>입식두수 *</label>
+          <input type="number" id="ev-transfer" min="0" placeholder="필수" />
         </div>
         <div class="ls-form-group">
-          <label>입식 총체중 (kg)</label>
-          <input type="number" id="ev-stock-weight" min="0" step="0.1" placeholder="전입 시에만 입력" />
+          <label>입식 총체중 (kg) *</label>
+          <input type="number" id="ev-stock-weight" min="0" step="0.1" placeholder="필수" />
+        </div>
+      </div>
+
+      <!-- 도폐사 필드 -->
+      <div id="ev-fields-death" class="ls-form-grid" style="display:none;">
+        <div class="ls-form-group">
+          <label>도폐사 유형 *</label>
+          <select id="ev-death-type">
+            <option value="폐사" selected>폐사</option>
+            <option value="도태">도태</option>
+          </select>
         </div>
         <div class="ls-form-group">
-          <label>폐사두수</label>
-          <input type="number" id="ev-deaths" min="0" value="0" />
+          <label>두수 *</label>
+          <input type="number" id="ev-death-count" min="0" placeholder="필수" />
+        </div>
+      </div>
+
+      <!-- 출하 필드 -->
+      <div id="ev-fields-shipping" class="ls-form-grid" style="display:none;">
+        <div class="ls-form-group">
+          <label>출하두수 *</label>
+          <input type="number" id="ev-shipped" min="0" placeholder="필수" />
         </div>
         <div class="ls-form-group">
-          <label>도태두수</label>
-          <input type="number" id="ev-culled" min="0" value="0" />
+          <label>출하 총체중 (kg) *</label>
+          <input type="number" id="ev-ship-weight" min="0" step="0.1" placeholder="필수" />
         </div>
         <div class="ls-form-group">
-          <label>출하두수</label>
-          <input type="number" id="ev-shipped" min="0" value="0" />
+          <label>유통업체</label>
+          <input type="text" id="ev-distributor" placeholder="선택" />
         </div>
+        <div class="ls-form-group">
+          <label>도축장</label>
+          <input type="text" id="ev-slaughterhouse" placeholder="선택" />
+        </div>
+        <div class="ls-form-group">
+          <label>육가공업체</label>
+          <input type="text" id="ev-meat-processor" placeholder="선택" />
+        </div>
+      </div>
+
+      <!-- 메모 (공통) -->
+      <div class="ls-form-grid">
         <div class="ls-form-group" style="grid-column:span 2;">
           <label>메모</label>
           <input type="text" id="ev-note" placeholder="선택 입력" />
@@ -124,13 +183,13 @@
         <table class="ls-table" id="events-table">
           <thead>
             <tr>
-              <th>날짜</th><th>뱃지명</th>
-              <th>전입</th><th>총체중(kg)</th><th>평균체중(kg)</th><th>폐사</th><th>도태</th><th>출하</th>
+              <th>날짜</th><th>뱃지명</th><th>유형</th>
+              <th>두수</th><th>체중(kg)</th><th>추가정보</th>
               <th>메모</th><th>삭제</th>
             </tr>
           </thead>
           <tbody id="events-tbody">
-            <tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>

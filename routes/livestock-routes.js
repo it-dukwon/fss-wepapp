@@ -195,26 +195,41 @@ module.exports = function livestockRoutes({ runPgQuery }) {
   // POST /api/livestock/events
   router.post("/events", async (req, res) => {
     try {
-      const { batch_id, event_date, transfer_in, deaths, culled, shipped, stock_weight, note } = req.body;
+      const {
+        batch_id, event_date, event_type,
+        transfer_in, deaths, culled, shipped,
+        stock_weight, ship_weight, death_type,
+        distributor, slaughterhouse, meat_processor, note,
+      } = req.body;
       if (!batch_id || !event_date) return res.status(400).json({ error: "batch_id and event_date are required" });
 
-      const ti = Number(transfer_in) || 0;
-      const d  = Number(deaths)      || 0;
-      const c  = Number(culled)      || 0;
-      const s  = Number(shipped)     || 0;
-      const sw = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
+      const ti  = Number(transfer_in) || 0;
+      const d   = Number(deaths)      || 0;
+      const c   = Number(culled)      || 0;
+      const s   = Number(shipped)     || 0;
+      const sw  = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
+      const shw = ship_weight  != null && ship_weight  !== "" ? Number(ship_weight)  : null;
+
       if (ti === 0 && d === 0 && c === 0 && s === 0) {
         return res.status(400).json({ error: "하나 이상의 두수를 입력하세요." });
       }
 
       const result = await runPgQuery(
-        `INSERT INTO livestock_events (batch_id, event_date, transfer_in, deaths, culled, shipped, stock_weight, note)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        `INSERT INTO livestock_events
+           (batch_id, event_date, event_type, transfer_in, deaths, culled, shipped,
+            stock_weight, ship_weight, death_type, distributor, slaughterhouse, meat_processor, note)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
          RETURNING event_id`,
-        [Number(batch_id), event_date, ti, d, c, s, sw, note || null]
+        [
+          Number(batch_id), event_date, event_type || null,
+          ti, d, c, s,
+          sw, shw, death_type || null,
+          distributor || null, slaughterhouse || null, meat_processor || null,
+          note || null,
+        ]
       );
       auditLog(req, "INSERT", "livestock_event", result.rows[0].event_id,
-        `이벤트 등록: batch_id=${batch_id}, 날짜=${event_date}, 전입=${ti}, 폐사=${d}, 도태=${c}, 출하=${s}`);
+        `이벤트 등록: batch_id=${batch_id}, 유형=${event_type}, 날짜=${event_date}`);
       res.json({ success: true, event_id: result.rows[0].event_id });
     } catch (err) {
       console.error("Create event error:", err);
@@ -229,13 +244,26 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
-      const { event_date, transfer_in, deaths, culled, shipped, stock_weight, note } = req.body;
-      const sw = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
+      const {
+        event_date, event_type, transfer_in, deaths, culled, shipped,
+        stock_weight, ship_weight, death_type,
+        distributor, slaughterhouse, meat_processor, note,
+      } = req.body;
+      const sw  = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
+      const shw = ship_weight  != null && ship_weight  !== "" ? Number(ship_weight)  : null;
       await runPgQuery(
         `UPDATE livestock_events
-         SET event_date=$1, transfer_in=$2, deaths=$3, culled=$4, shipped=$5, stock_weight=$6, note=$7
-         WHERE event_id=$8`,
-        [event_date, Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0, sw, note || null, id]
+         SET event_date=$1, event_type=$2, transfer_in=$3, deaths=$4, culled=$5, shipped=$6,
+             stock_weight=$7, ship_weight=$8, death_type=$9,
+             distributor=$10, slaughterhouse=$11, meat_processor=$12, note=$13
+         WHERE event_id=$14`,
+        [
+          event_date, event_type || null,
+          Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0,
+          sw, shw, death_type || null,
+          distributor || null, slaughterhouse || null, meat_processor || null,
+          note || null, id,
+        ]
       );
       auditLog(req, "UPDATE", "livestock_event", id, `이벤트 수정: id=${id}, 날짜=${event_date}`);
       res.json({ success: true });
