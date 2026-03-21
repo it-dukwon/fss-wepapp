@@ -11,16 +11,6 @@ function parseDateOrNull(dateStr) {
 module.exports = function farmsRoutes({ runPgQuery }) {
   const router = express.Router();
 
-  // 컬럼 자동 추가 (기존 DB 호환)
-  Promise.all([
-    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS owner_email VARCHAR(200)`),
-    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS insurance_status VARCHAR(10)`),
-    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS insurance_expire DATE`),
-    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS bank_name VARCHAR(50)`),
-    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS account_number VARCHAR(50)`),
-    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS account_holder VARCHAR(50)`),
-  ]).catch((e) => console.error("farms migration error:", e.message));
-
   // ═══════════════════════════════════════════════════════════
   // 사료회사 (feed_companies)
   // ═══════════════════════════════════════════════════════════

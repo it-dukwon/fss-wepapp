@@ -8,37 +8,6 @@ const { sendMail }  = require("../utils/mailer");
 module.exports = function settlementRoutes({ runPgQuery }) {
   const router = express.Router();
 
-  // ─── 테이블 자동 생성 ────────────────────────────────────────
-  runPgQuery(`
-    CREATE TABLE IF NOT EXISTS consignment_settlements (
-      id                   SERIAL PRIMARY KEY,
-      batch_id             INT UNIQUE REFERENCES livestock_batches(batch_id),
-      farm_account         VARCHAR(200),
-      initial_stock_weight NUMERIC(10,2),
-      claim_count          INT            DEFAULT 0,
-      std_mortality_rate   NUMERIC(6,4)   DEFAULT 0.03,
-      grade_1plus          INT            DEFAULT 0,
-      grade_1              INT            DEFAULT 0,
-      grade_2              INT            DEFAULT 0,
-      grade_out_spec       INT            DEFAULT 0,
-      grade_out_other      INT            DEFAULT 0,
-      grade_penalty        NUMERIC(15,0)  DEFAULT 0,
-      feed_piglet          NUMERIC(10,2)  DEFAULT 0,
-      feed_grow            NUMERIC(10,2)  DEFAULT 0,
-      feed_cost_total      NUMERIC(15,0)  DEFAULT 0,
-      base_fee             NUMERIC(15,0)  DEFAULT 0,
-      incentive_growth     NUMERIC(15,0)  DEFAULT 0,
-      incentive_feed       NUMERIC(15,0)  DEFAULT 0,
-      penalty_grade        NUMERIC(15,0)  DEFAULT 0,
-      prepayment           NUMERIC(15,0)  DEFAULT 0,
-      payment_note         VARCHAR(500),
-      revenue              NUMERIC(15,0)  DEFAULT 0,
-      piglet_cost          NUMERIC(15,0)  DEFAULT 0,
-      created_at           TIMESTAMPTZ    DEFAULT NOW(),
-      updated_at           TIMESTAMPTZ    DEFAULT NOW()
-    )
-  `).catch((e) => console.error("Settlement table init error:", e.message));
-
   // ─── 공통 계산 헬퍼 ──────────────────────────────────────────
   async function getSettlementData(batch_id) {
     const batchRes = await runPgQuery(
