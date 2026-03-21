@@ -49,29 +49,32 @@ function toast(icon, title) {
 async function loadStatus() {
   const tbody = document.getElementById("status-tbody");
   const tfoot = document.getElementById("status-tfoot");
-  tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>`;
   try {
     const { batches } = await apiFetch("/batches?status=active");
     if (!batches.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">활성 뱃지 없음</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="ls-empty">활성 뱃지 없음</td></tr>`;
       tfoot.innerHTML = "";
       return;
     }
 
-    let totIn = 0, totD = 0, totC = 0, totS = 0, totCur = 0;
+    let totRecent = 0, totCumul = 0, totD = 0, totC = 0, totS = 0, totCur = 0;
     tbody.innerHTML = batches.map((b) => {
-      totIn  += b.total_transfer_in;
-      totD   += b.total_deaths;
-      totC   += b.total_culled;
-      totS   += b.total_shipped;
-      totCur += b.current_count;
+      totRecent += b.recent_stock_in;
+      totCumul  += b.cumulative_stock_in;
+      totD      += b.total_deaths;
+      totC      += b.total_culled;
+      totS      += b.total_shipped;
+      totCur    += b.current_count;
+      const avgWt = b.avg_stock_weight != null ? Number(b.avg_stock_weight).toFixed(1) + " kg" : "-";
       return `<tr>
         <td style="font-weight:700;">${b.badge_name}</td>
         <td>${b.manager || "-"}</td>
         <td>${fmtDate(b.last_transfer_date)}</td>
         <td>${fmtDate(b.last_event_date)}</td>
-        <td>${fmt(b.stock_in_count)}</td>
-        <td>${fmt(b.total_transfer_in)}</td>
+        <td>${fmt(b.recent_stock_in)}</td>
+        <td>${avgWt}</td>
+        <td>${fmt(b.cumulative_stock_in)}</td>
         <td class="num-red">${fmt(b.total_deaths)}</td>
         <td class="num-orange">${fmt(b.total_culled)}</td>
         <td>${fmt(b.total_shipped)}</td>
@@ -81,8 +84,10 @@ async function loadStatus() {
 
     tfoot.innerHTML = `
       <td style="font-weight:700;">합계</td>
-      <td></td><td></td><td></td><td></td>
-      <td>${fmt(totIn)}</td>
+      <td></td><td></td><td></td>
+      <td>${fmt(totRecent)}</td>
+      <td></td>
+      <td>${fmt(totCumul)}</td>
       <td class="num-red">${fmt(totD)}</td>
       <td class="num-orange">${fmt(totC)}</td>
       <td>${fmt(totS)}</td>
@@ -90,7 +95,7 @@ async function loadStatus() {
     `;
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="ls-empty">${err.message}</td></tr>`;
   }
 }
 
@@ -112,9 +117,10 @@ async function loadBatchSelect() {
 }
 
 async function submitEvent() {
-  const batch_id   = document.getElementById("ev-batch").value;
-  const event_date = document.getElementById("ev-date").value;
+  const batch_id    = document.getElementById("ev-batch").value;
+  const event_date  = document.getElementById("ev-date").value;
   const transfer_in = document.getElementById("ev-transfer").value;
+  const stock_weight = document.getElementById("ev-stock-weight").value;
   const deaths      = document.getElementById("ev-deaths").value;
   const culled      = document.getElementById("ev-culled").value;
   const shipped     = document.getElementById("ev-shipped").value;
@@ -130,7 +136,7 @@ async function submitEvent() {
   try {
     await apiFetch("/events", {
       method: "POST",
-      body: JSON.stringify({ batch_id, event_date, transfer_in, deaths, culled, shipped, note }),
+      body: JSON.stringify({ batch_id, event_date, transfer_in, stock_weight: stock_weight || null, deaths, culled, shipped, note }),
     });
     toast("success", "저장되었습니다");
     msg.textContent = "";
@@ -138,6 +144,7 @@ async function submitEvent() {
     ["ev-transfer", "ev-deaths", "ev-culled", "ev-shipped"].forEach((id) => {
       document.getElementById(id).value = "0";
     });
+    document.getElementById("ev-stock-weight").value = "";
     document.getElementById("ev-note").value = "";
     loadEvents();
   } catch (err) {
@@ -148,7 +155,7 @@ async function submitEvent() {
 
 async function loadEvents() {
   const tbody = document.getElementById("events-tbody");
-  tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">로딩 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>`;
 
   const batch_id  = document.getElementById("ev-filter-batch")?.value || "";
   const date_from = document.getElementById("ev-filter-from")?.value || "";
@@ -162,24 +169,29 @@ async function loadEvents() {
   try {
     const { events } = await apiFetch("/events?" + params.toString());
     if (!events.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">이벤트 없음</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">이벤트 없음</td></tr>`;
       return;
     }
-    tbody.innerHTML = events.map((e) => `
-      <tr>
+    tbody.innerHTML = events.map((e) => {
+      const avgWt = (e.stock_weight && e.transfer_in > 0)
+        ? (Number(e.stock_weight) / e.transfer_in).toFixed(1)
+        : "-";
+      return `<tr>
         <td>${fmtDate(e.event_date)}</td>
         <td style="font-weight:700;">${e.badge_name}</td>
         <td>${fmt(e.transfer_in)}</td>
+        <td>${e.stock_weight != null ? Number(e.stock_weight).toLocaleString() : "-"}</td>
+        <td>${avgWt !== "-" ? avgWt + " kg" : "-"}</td>
         <td class="num-red">${fmt(e.deaths)}</td>
         <td class="num-orange">${fmt(e.culled)}</td>
         <td>${fmt(e.shipped)}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${e.note || ""}</td>
         <td><button class="ls-btn ls-btn-red" style="padding:3px 8px;" onclick="deleteEvent(${e.event_id})">삭제</button></td>
-      </tr>
-    `).join("");
+      </tr>`;
+    }).join("");
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="ls-empty">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">${err.message}</td></tr>`;
   }
 }
 

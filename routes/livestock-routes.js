@@ -16,28 +16,58 @@ module.exports = function livestockRoutes({ runPgQuery }) {
         status === "all" ? "" : `WHERE b.status = '${status === "completed" ? "completed" : "active"}'`;
 
       const sql = `
+        WITH agg AS (
+          SELECT
+            e.batch_id,
+            COALESCE(SUM(e.transfer_in), 0)::INT  AS total_transfer_in,
+            COALESCE(SUM(e.deaths),      0)::INT  AS total_deaths,
+            COALESCE(SUM(e.culled),      0)::INT  AS total_culled,
+            COALESCE(SUM(e.shipped),     0)::INT  AS total_shipped,
+            COALESCE(SUM(e.stock_weight), 0)       AS total_stock_weight,
+            MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END) AS last_transfer_date,
+            MAX(e.event_date)                      AS last_event_date
+          FROM livestock_events e
+          GROUP BY e.batch_id
+        ),
+        recent AS (
+          SELECT
+            e.batch_id,
+            COALESCE(SUM(e.transfer_in), 0)::INT AS recent_stock_in
+          FROM livestock_events e
+          JOIN agg a ON a.batch_id = e.batch_id
+          WHERE e.transfer_in > 0
+            AND e.event_date >= (a.last_transfer_date - INTERVAL '2 months')
+          GROUP BY e.batch_id
+        )
         SELECT
           b.batch_id, b.badge_name, b.farm_id, b.manager,
           b.stock_in_date, b.stock_in_count, b.prev_month_count,
           b.status, b.note, b.created_at,
           f."농장명" AS farm_name, f."지역" AS region,
-          COALESCE(SUM(e.transfer_in), 0)::INT  AS total_transfer_in,
-          COALESCE(SUM(e.deaths),      0)::INT  AS total_deaths,
-          COALESCE(SUM(e.culled),      0)::INT  AS total_culled,
-          COALESCE(SUM(e.shipped),     0)::INT  AS total_shipped,
+          COALESCE(a.total_transfer_in, 0)::INT  AS total_transfer_in,
+          COALESCE(a.total_deaths,      0)::INT  AS total_deaths,
+          COALESCE(a.total_culled,      0)::INT  AS total_culled,
+          COALESCE(a.total_shipped,     0)::INT  AS total_shipped,
+          COALESCE(r.recent_stock_in,   0)::INT  AS recent_stock_in,
+          (b.stock_in_count + COALESCE(a.total_transfer_in, 0))::INT AS cumulative_stock_in,
+          COALESCE(a.total_stock_weight, 0)       AS total_stock_weight,
+          CASE WHEN COALESCE(a.total_transfer_in, 0) > 0
+            THEN ROUND(COALESCE(a.total_stock_weight, 0)::NUMERIC / a.total_transfer_in, 1)
+            ELSE NULL
+          END                                     AS avg_stock_weight,
           (b.prev_month_count
-            + COALESCE(SUM(e.transfer_in), 0)
-            - COALESCE(SUM(e.deaths),      0)
-            - COALESCE(SUM(e.culled),      0)
-            - COALESCE(SUM(e.shipped),     0)
+            + COALESCE(a.total_transfer_in, 0)
+            - COALESCE(a.total_deaths,      0)
+            - COALESCE(a.total_culled,      0)
+            - COALESCE(a.total_shipped,     0)
           )::INT AS current_count,
-          MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END) AS last_transfer_date,
-          MAX(e.event_date)                                        AS last_event_date
+          a.last_transfer_date,
+          a.last_event_date
         FROM livestock_batches b
         LEFT JOIN list_farms f ON f."농장ID" = b.farm_id
-        LEFT JOIN livestock_events e ON e.batch_id = b.batch_id
+        LEFT JOIN agg a ON a.batch_id = b.batch_id
+        LEFT JOIN recent r ON r.batch_id = b.batch_id
         ${whereClause}
-        GROUP BY b.batch_id, f."농장명", f."지역"
         ORDER BY b.status, b.stock_in_date DESC
       `;
       const result = await runPgQuery(sql);
@@ -165,22 +195,23 @@ module.exports = function livestockRoutes({ runPgQuery }) {
   // POST /api/livestock/events
   router.post("/events", async (req, res) => {
     try {
-      const { batch_id, event_date, transfer_in, deaths, culled, shipped, note } = req.body;
+      const { batch_id, event_date, transfer_in, deaths, culled, shipped, stock_weight, note } = req.body;
       if (!batch_id || !event_date) return res.status(400).json({ error: "batch_id and event_date are required" });
 
       const ti = Number(transfer_in) || 0;
       const d  = Number(deaths)      || 0;
       const c  = Number(culled)      || 0;
       const s  = Number(shipped)     || 0;
+      const sw = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
       if (ti === 0 && d === 0 && c === 0 && s === 0) {
         return res.status(400).json({ error: "하나 이상의 두수를 입력하세요." });
       }
 
       const result = await runPgQuery(
-        `INSERT INTO livestock_events (batch_id, event_date, transfer_in, deaths, culled, shipped, note)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)
+        `INSERT INTO livestock_events (batch_id, event_date, transfer_in, deaths, culled, shipped, stock_weight, note)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
          RETURNING event_id`,
-        [Number(batch_id), event_date, ti, d, c, s, note || null]
+        [Number(batch_id), event_date, ti, d, c, s, sw, note || null]
       );
       auditLog(req, "INSERT", "livestock_event", result.rows[0].event_id,
         `이벤트 등록: batch_id=${batch_id}, 날짜=${event_date}, 전입=${ti}, 폐사=${d}, 도태=${c}, 출하=${s}`);
@@ -198,12 +229,13 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
-      const { event_date, transfer_in, deaths, culled, shipped, note } = req.body;
+      const { event_date, transfer_in, deaths, culled, shipped, stock_weight, note } = req.body;
+      const sw = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
       await runPgQuery(
         `UPDATE livestock_events
-         SET event_date=$1, transfer_in=$2, deaths=$3, culled=$4, shipped=$5, note=$6
-         WHERE event_id=$7`,
-        [event_date, Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0, note || null, id]
+         SET event_date=$1, transfer_in=$2, deaths=$3, culled=$4, shipped=$5, stock_weight=$6, note=$7
+         WHERE event_id=$8`,
+        [event_date, Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0, sw, note || null, id]
       );
       auditLog(req, "UPDATE", "livestock_event", id, `이벤트 수정: id=${id}, 날짜=${event_date}`);
       res.json({ success: true });
