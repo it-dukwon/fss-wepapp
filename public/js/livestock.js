@@ -110,7 +110,7 @@ function selectEventType(type) {
   document.querySelectorAll(".ev-type-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.type === type);
   });
-  ["stock_in", "death", "shipping"].forEach((t) => {
+  ["stock_in", "death", "shipping", "deduction"].forEach((t) => {
     const el = document.getElementById(`ev-fields-${t}`);
     if (el) el.style.display = t === type ? "" : "none";
   });
@@ -169,6 +169,13 @@ async function submitEvent() {
       slaughterhouse: document.getElementById("ev-slaughterhouse").value.trim() || null,
       meat_processor: document.getElementById("ev-meat-processor").value.trim() || null,
     };
+
+  } else if (currentEventType === "deduction") {
+    const deducted = Number(document.getElementById("ev-deduction-count").value) || 0;
+    const reason   = document.getElementById("ev-deduction-reason").value.trim();
+    if (!deducted) return Swal.fire({ icon: "warning", title: "공제두수를 입력하세요." });
+    if (!reason)   return Swal.fire({ icon: "warning", title: "사유를 입력하세요." });
+    body = { ...body, deducted, note: reason };
   }
 
   const msg = document.getElementById("ev-msg");
@@ -195,6 +202,9 @@ function resetEventForm() {
   } else if (currentEventType === "shipping") {
     ["ev-shipped", "ev-ship-weight", "ev-distributor", "ev-slaughterhouse", "ev-meat-processor"]
       .forEach((id) => { document.getElementById(id).value = ""; });
+  } else if (currentEventType === "deduction") {
+    document.getElementById("ev-deduction-count").value  = "";
+    document.getElementById("ev-deduction-reason").value = "";
   }
   document.getElementById("ev-note").value = "";
 }
@@ -242,6 +252,11 @@ async function loadEvents() {
         count  = fmt(e.shipped);
         weight = e.ship_weight != null ? Number(e.ship_weight).toLocaleString() + " kg" : "-";
         extra  = [e.distributor, e.slaughterhouse, e.meat_processor].filter(Boolean).join(" / ");
+      } else if (etype === "deduction" || (!etype && e.deducted > 0)) {
+        badge  = `<span class="ev-badge" style="background:#e9e3f5;color:#7b5ea7;">공제</span>`;
+        count  = fmt(e.deducted);
+        weight = "-";
+        extra  = e.note || "";
       } else {
         badge = `<span class="ev-badge">기타</span>`;
         count = "-"; weight = "-"; extra = "";

@@ -23,6 +23,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
             COALESCE(SUM(e.deaths),      0)::INT  AS total_deaths,
             COALESCE(SUM(e.culled),      0)::INT  AS total_culled,
             COALESCE(SUM(e.shipped),     0)::INT  AS total_shipped,
+            COALESCE(SUM(e.deducted),    0)::INT  AS total_deducted,
             COALESCE(SUM(e.stock_weight), 0)       AS total_stock_weight,
             MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END) AS last_transfer_date,
             MAX(e.event_date)                      AS last_event_date
@@ -60,6 +61,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
             - COALESCE(a.total_deaths,      0)
             - COALESCE(a.total_culled,      0)
             - COALESCE(a.total_shipped,     0)
+            - COALESCE(a.total_deducted,    0)
           )::INT AS current_count,
           a.last_transfer_date,
           a.last_event_date
@@ -197,7 +199,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
     try {
       const {
         batch_id, event_date, event_type,
-        transfer_in, deaths, culled, shipped,
+        transfer_in, deaths, culled, shipped, deducted,
         stock_weight, ship_weight, death_type,
         distributor, slaughterhouse, meat_processor, note,
       } = req.body;
@@ -207,22 +209,23 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const d   = Number(deaths)      || 0;
       const c   = Number(culled)      || 0;
       const s   = Number(shipped)     || 0;
+      const ded = Number(deducted)    || 0;
       const sw  = stock_weight != null && stock_weight !== "" ? Number(stock_weight) : null;
       const shw = ship_weight  != null && ship_weight  !== "" ? Number(ship_weight)  : null;
 
-      if (ti === 0 && d === 0 && c === 0 && s === 0) {
+      if (ti === 0 && d === 0 && c === 0 && s === 0 && ded === 0) {
         return res.status(400).json({ error: "하나 이상의 두수를 입력하세요." });
       }
 
       const result = await runPgQuery(
         `INSERT INTO livestock_events
-           (batch_id, event_date, event_type, transfer_in, deaths, culled, shipped,
+           (batch_id, event_date, event_type, transfer_in, deaths, culled, shipped, deducted,
             stock_weight, ship_weight, death_type, distributor, slaughterhouse, meat_processor, note)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          RETURNING event_id`,
         [
           Number(batch_id), event_date, event_type || null,
-          ti, d, c, s,
+          ti, d, c, s, ded,
           sw, shw, death_type || null,
           distributor || null, slaughterhouse || null, meat_processor || null,
           note || null,
@@ -245,7 +248,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
       const {
-        event_date, event_type, transfer_in, deaths, culled, shipped,
+        event_date, event_type, transfer_in, deaths, culled, shipped, deducted,
         stock_weight, ship_weight, death_type,
         distributor, slaughterhouse, meat_processor, note,
       } = req.body;
@@ -253,13 +256,13 @@ module.exports = function livestockRoutes({ runPgQuery }) {
       const shw = ship_weight  != null && ship_weight  !== "" ? Number(ship_weight)  : null;
       await runPgQuery(
         `UPDATE livestock_events
-         SET event_date=$1, event_type=$2, transfer_in=$3, deaths=$4, culled=$5, shipped=$6,
-             stock_weight=$7, ship_weight=$8, death_type=$9,
-             distributor=$10, slaughterhouse=$11, meat_processor=$12, note=$13
-         WHERE event_id=$14`,
+         SET event_date=$1, event_type=$2, transfer_in=$3, deaths=$4, culled=$5, shipped=$6, deducted=$7,
+             stock_weight=$8, ship_weight=$9, death_type=$10,
+             distributor=$11, slaughterhouse=$12, meat_processor=$13, note=$14
+         WHERE event_id=$15`,
         [
           event_date, event_type || null,
-          Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0,
+          Number(transfer_in) || 0, Number(deaths) || 0, Number(culled) || 0, Number(shipped) || 0, Number(deducted) || 0,
           sw, shw, death_type || null,
           distributor || null, slaughterhouse || null, meat_processor || null,
           note || null, id,
