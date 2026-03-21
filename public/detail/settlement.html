@@ -56,8 +56,11 @@
   <div class="st-wrap">
     <!-- 상단: 뱃지 선택 + 버튼 -->
     <div class="st-top">
-      <select id="batch-select" onchange="loadSettlement()">
+      <select id="batch-select" onchange="onBatchChange()">
         <option value="">-- 뱃지 선택 --</option>
+      </select>
+      <select id="pass-select" onchange="loadSettlement()" style="flex:0 0 auto;min-width:160px;max-width:220px;">
+        <option value="">전체 (파스 무관)</option>
       </select>
       <div class="btn-row">
         <span class="save-msg" id="save-msg"></span>
@@ -341,6 +344,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="../js/table-sort.js"></script>
   <script src="/js/page-view-log.js" data-page="위탁정산서"></script>
   <script src="../js/settlement.js"></script>
 </body>

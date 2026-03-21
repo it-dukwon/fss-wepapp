@@ -67,19 +67,47 @@ async function loadBatches() {
     // URL 파라미터로 자동 선택
     const urlParams = new URLSearchParams(window.location.search);
     const bid = urlParams.get("batch_id");
-    if (bid) { sel.value = bid; loadSettlement(); }
+    if (bid) { sel.value = bid; await loadPassSelect(bid); loadSettlement(); }
   } catch (err) {
     console.error(err);
   }
+}
+
+async function onBatchChange() {
+  const batch_id = document.getElementById("batch-select").value;
+  await loadPassSelect(batch_id);
+  loadSettlement();
+}
+
+async function loadPassSelect(batch_id) {
+  const sel = document.getElementById("pass-select");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">전체 (파스 무관)</option>`;
+  if (!batch_id) return;
+  try {
+    const LIVESTOCK_API = API.replace("/settlement", "/livestock");
+    const res = await fetch(`${LIVESTOCK_API}/passes/for-batch/${batch_id}`, { credentials: "include" });
+    const json = await res.json();
+    if (!json.success || !json.passes.length) return;
+    json.passes.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.pass_id;
+      opt.textContent = p.status === "active" ? `${p.pass_name} (활성)` : p.pass_name;
+      if (p.status === "active") opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch (_) {}
 }
 
 // ─── 정산서 로드 ─────────────────────────────────────────────
 async function loadSettlement() {
   const batch_id = document.getElementById("batch-select").value;
   if (!batch_id) { document.getElementById("st-body").style.display = "none"; return; }
+  const pass_id = document.getElementById("pass-select")?.value || "";
 
   try {
-    const { data: d } = await apiFetch(`/${batch_id}`);
+    const params = pass_id ? `?pass_id=${pass_id}` : "";
+    const { data: d } = await apiFetch(`/${batch_id}${params}`);
     document.getElementById("st-body").style.display = "";
 
     _ownerEmail = d.batch.owner_email || "";
@@ -240,6 +268,24 @@ function renderHistory(d) {
   const baseCount = d.events.reduce((s, e) => s - (e.transfer_in || 0), d.stock_in_count);
   let running = baseCount;
 
+  // 초기 입식 행 (batch.stock_in_count + initial_stock_weight)
+  const initCount = d.stock_in_count - d.events.reduce((s, e) => s + (e.transfer_in || 0), 0);
+  if (initCount > 0) {
+    running += initCount;
+    const initAvgW = d.initial_stock_weight && initCount
+      ? fmt(d.initial_stock_weight / initCount, 2) : "-";
+    rows.push(`<tr class="ev-in">
+      <td>${fmtDate(d.stock_in_date)}</td>
+      <td><span class="ev-badge ev-badge-in">입식</span></td>
+      <td>${fmt(initCount)}</td>
+      <td>${fmt(d.initial_stock_weight, 1)}</td>
+      <td>${initAvgW}</td>
+      <td>-</td><td>-</td><td>-</td><td>-</td>
+      <td>${fmt(running)}</td>
+      <td>-</td>
+    </tr>`);
+  }
+
   for (const ev of d.events) {
     const etype = ev.event_type;
 
@@ -289,9 +335,9 @@ function renderHistory(d) {
       </tr>`);
     } else if (etype === "deduction" || (!etype && ev.deducted > 0)) {
       running -= (ev.deducted || 0);
-      rows.push(`<tr>
+      rows.push(`<tr style="background:#f3f0fa;">
         <td>${fmtDate(ev.event_date)}</td>
-        <td><span class="ev-badge" style="background:#e9e3f5;color:#7b5ea7;">공제</span></td>
+        <td>공제</td>
         <td>-</td><td>-</td><td>-</td>
         <td>${fmt(ev.deducted)}</td>
         <td>-</td><td>-</td><td>-</td>
@@ -320,6 +366,7 @@ function renderHistory(d) {
   </tr>`);
 
   tbody.innerHTML = rows.join("");
+  window.initTableSort?.();
 }
 
 // ─── 저장 ────────────────────────────────────────────────────
@@ -394,7 +441,8 @@ async function downloadExcel() {
     if (!isConfirmed) return;
   }
 
-  window.location.href = API + `/${batch_id}/excel`;
+  const pass_id = document.getElementById("pass-select")?.value || "";
+  window.location.href = API + `/${batch_id}/excel` + (pass_id ? `?pass_id=${pass_id}` : "");
 }
 
 // ─── 이메일 발송 ─────────────────────────────────────────────
@@ -429,9 +477,10 @@ async function sendSettlementEmail() {
 
   try {
     Swal.fire({ title: "발송 중...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const pass_id = document.getElementById("pass-select")?.value || "";
     await apiFetch(`/${batch_id}/send-email`, {
       method: "POST",
-      body: JSON.stringify({ to, cc: cc || undefined }),
+      body: JSON.stringify({ to, cc: cc || undefined, pass_id: pass_id || undefined }),
     });
     Swal.fire({ icon: "success", title: "발송 완료", text: `${to} 으로 발송되었습니다.` });
   } catch (err) {

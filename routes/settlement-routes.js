@@ -14,7 +14,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
   const router = express.Router();
 
   // ─── 공통 계산 헬퍼 ──────────────────────────────────────────
-  async function getSettlementData(batch_id) {
+  async function getSettlementData(batch_id, pass_id) {
     const batchRes = await runPgQuery(
       `SELECT b.*, f."농장명" AS farm_name, f."지역" AS region, f.owner_email,
               f.bank_name, f.account_number, f.account_holder
@@ -25,6 +25,18 @@ module.exports = function settlementRoutes({ runPgQuery }) {
     );
     if (!batchRes.rows.length) return null;
     const batch = batchRes.rows[0];
+
+    // 파스 정보 (pass_id 있을 때)
+    let passInfo = null;
+    if (pass_id) {
+      const passRes = await runPgQuery(
+        `SELECT pass_id, pass_name, pass_no, start_count, started_at FROM livestock_passes WHERE pass_id = $1`,
+        [pass_id]
+      );
+      passInfo = passRes.rows[0] || null;
+    }
+
+    const passFilter = pass_id ? `AND pass_id = ${pass_id}` : "";
 
     const aggRes = await runPgQuery(
       `SELECT
@@ -37,7 +49,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
          COALESCE(SUM(deducted), 0)::INT AS total_deducted,
          MAX(CASE WHEN event_type='shipping' THEN event_date END) AS last_ship_date,
          MAX(CASE WHEN transfer_in > 0        THEN event_date END) AS last_stock_in_date
-       FROM livestock_events WHERE batch_id = $1`,
+       FROM livestock_events WHERE batch_id = $1 ${passFilter}`,
       [batch_id]
     );
     const agg = aggRes.rows[0];
@@ -53,15 +65,18 @@ module.exports = function settlementRoutes({ runPgQuery }) {
               deaths, culled, death_type, deducted,
               shipped, ship_weight, distributor, slaughterhouse, meat_processor, note
        FROM livestock_events
-       WHERE batch_id = $1
+       WHERE batch_id = $1 ${passFilter}
        ORDER BY event_date, event_id`,
       [batch_id]
     );
     const events = evRes.rows;
 
     // ── 기본 계산 ────────────────────────────────────────────
-    const stock_in_date          = agg.last_stock_in_date || batch.stock_in_date;
-    const stock_in_count         = (batch.stock_in_count || 0) + Number(agg.total_transfer_in || 0);
+    const stock_in_date          = agg.last_stock_in_date || (passInfo ? passInfo.started_at : null) || batch.stock_in_date;
+    // 파스가 있으면 start_count(이전 파스 잔여 포함) + 이번 파스 transfer_in, 아니면 기존 방식
+    const stock_in_count         = passInfo
+      ? (passInfo.start_count || 0) + Number(agg.total_transfer_in || 0)
+      : (batch.stock_in_count || 0) + Number(agg.total_transfer_in || 0);
     const initial_stock_weight   = Number(agg.total_stock_weight || 0);
     const avg_stock_weight       = stock_in_count > 0 ? initial_stock_weight / stock_in_count : 0;
 
@@ -121,7 +136,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
     const remaining = stock_in_count - total_dead - total_shipped - total_deducted;
 
     return {
-      batch, manual, events,
+      batch, manual, events, passInfo,
       stock_in_count, stock_in_date, initial_stock_weight, avg_stock_weight,
       total_shipped, total_ship_weight, avg_ship_weight, last_ship_date,
       breeding_days, total_weight_gain, daily_gain_g, daily_gain_per,
@@ -154,7 +169,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
   router.get("/:batch_id", async (req, res) => {
     try {
       const batch_id = parseInt(req.params.batch_id, 10);
-      const data = await getSettlementData(batch_id);
+      const pass_id  = req.query.pass_id ? parseInt(req.query.pass_id, 10) : null;
+      const data = await getSettlementData(batch_id, pass_id);
       if (!data) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
       res.json({ success: true, data });
     } catch (err) {
@@ -353,7 +369,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
   router.get("/:batch_id/excel", async (req, res) => {
     try {
       const batch_id = parseInt(req.params.batch_id, 10);
-      const d = await getSettlementData(batch_id);
+      const pass_id  = req.query.pass_id ? parseInt(req.query.pass_id, 10) : null;
+      const d = await getSettlementData(batch_id, pass_id);
       if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
       const buffer = await buildExcelBuffer(d);
       const today = dayjs().tz("Asia/Seoul").format("YYYYMMDD");
@@ -371,10 +388,11 @@ module.exports = function settlementRoutes({ runPgQuery }) {
   router.post("/:batch_id/send-email", async (req, res) => {
     try {
       const batch_id = parseInt(req.params.batch_id, 10);
-      const { to, cc } = req.body || {};
+      const { to, cc, pass_id: bodyPassId } = req.body || {};
+      const pass_id = bodyPassId ? parseInt(bodyPassId, 10) : null;
       if (!to) return res.status(400).json({ error: "수신자 이메일(to) 필수" });
 
-      const d = await getSettlementData(batch_id);
+      const d = await getSettlementData(batch_id, pass_id);
       if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
 
       const buffer = await buildExcelBuffer(d);
