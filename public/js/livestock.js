@@ -208,11 +208,11 @@ async function loadBatchSelect() {
 async function loadPassSelect(batch_id) {
   const el = document.getElementById("ev-pass");
   if (!el) return;
-  if (!batch_id) { el.innerHTML = `<option value="">파스 없음</option>`; return; }
+  if (!batch_id) { el.innerHTML = `<option value="">-- 파스 선택 --</option>`; return; }
   try {
     const { passes } = await apiFetch(`/passes/for-batch/${batch_id}`);
     if (!passes.length) {
-      el.innerHTML = `<option value="">파스 없음</option>`;
+      el.innerHTML = `<option value="">파스 없음 (현황 탭에서 먼저 생성하세요)</option>`;
       return;
     }
     el.innerHTML = passes.map((p) => {
@@ -220,7 +220,7 @@ async function loadPassSelect(batch_id) {
       return `<option value="${p.pass_id}" ${p.status === "active" ? "selected" : ""}>${label}</option>`;
     }).join("");
   } catch (_) {
-    el.innerHTML = `<option value="">파스 없음</option>`;
+    el.innerHTML = `<option value="">-- 파스 선택 --</option>`;
   }
 }
 
@@ -233,8 +233,9 @@ async function submitEvent() {
     return Swal.fire({ icon: "warning", title: "뱃지와 날짜는 필수입니다." });
   }
 
-  const pass_id = document.getElementById("ev-pass")?.value || null;
-  let body = { batch_id, pass_id: pass_id || undefined, event_date, event_type: currentEventType, note: note || null };
+  const pass_id = document.getElementById("ev-pass")?.value || "";
+  if (!pass_id) return Swal.fire({ icon: "warning", title: "파스를 선택하세요." });
+  let body = { batch_id, pass_id, event_date, event_type: currentEventType, note: note || null };
 
   if (currentEventType === "stock_in") {
     const transfer_in  = Number(document.getElementById("ev-transfer").value) || 0;
