@@ -265,7 +265,7 @@ function renderHistory(d) {
       </tr>`);
     } else if (etype === "deduction" || (!etype && ev.deducted > 0)) {
       running -= (ev.deducted || 0);
-      rows.push(`<tr style="background:#f5f0fb;">
+      rows.push(`<tr>
         <td>${fmtDate(ev.event_date)}</td>
         <td><span class="ev-badge" style="background:#e9e3f5;color:#7b5ea7;">공제</span></td>
         <td>-</td><td>-</td><td>-</td>
