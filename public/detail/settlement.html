@@ -150,7 +150,7 @@
           </div>
           <div class="st-field">
             <span class="st-label">클레임두수 <i class="fa-solid fa-pencil" style="font-size:.75rem;color:#888;"></i></span>
-            <input class="st-input" id="f-claim-count" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-claim-count" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">총 폐사두수 <span class="badge-auto">자동</span></span>
@@ -190,27 +190,27 @@
         <div class="st-grid">
           <div class="st-field">
             <span class="st-label">1+등급</span>
-            <input class="st-input" id="f-grade-1plus" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-grade-1plus" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">1등급</span>
-            <input class="st-input" id="f-grade-1" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-grade-1" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">2등급</span>
-            <input class="st-input" id="f-grade-2" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-grade-2" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">등외 (비규격)</span>
-            <input class="st-input" id="f-grade-out-spec" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-grade-out-spec" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">등외 (미거세 외 기타)</span>
-            <input class="st-input" id="f-grade-out-other" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-grade-out-other" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">등외 페널티 (원)</span>
-            <input class="st-input" id="f-grade-penalty" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-grade-penalty" type="text" inputmode="numeric" value="0" />
           </div>
         </div>
       </div>
@@ -221,11 +221,11 @@
         <div class="st-grid">
           <div class="st-field">
             <span class="st-label">젖돈 사료 (kg)</span>
-            <input class="st-input" id="f-feed-piglet" type="number" min="0" step="0.1" value="0" />
+            <input class="st-input comma-input" id="f-feed-piglet" type="text" inputmode="decimal" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">육성돈 사료 (kg)</span>
-            <input class="st-input" id="f-feed-grow" type="number" min="0" step="0.1" value="0" />
+            <input class="st-input comma-input" id="f-feed-grow" type="text" inputmode="decimal" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">총 급여량 (kg) <span class="badge-auto">계산</span></span>
@@ -233,7 +233,7 @@
           </div>
           <div class="st-field">
             <span class="st-label">총 사료비 (원)</span>
-            <input class="st-input" id="f-feed-cost-total" type="number" min="0" value="0" />
+            <input class="st-input comma-input" id="f-feed-cost-total" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">사료 요구율 <span class="badge-auto">계산</span></span>
@@ -260,24 +260,24 @@
         <div class="st-grid">
           <div class="st-field">
             <span class="st-label">기본 위탁사육비 (원)</span>
-            <input class="st-input" id="f-base-fee" type="number" value="0" />
+            <input class="st-input comma-input" id="f-base-fee" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">육성육 인센티브/패널티 (원)</span>
-            <input class="st-input" id="f-incentive-growth" type="number" value="0" />
+            <input class="st-input comma-input" id="f-incentive-growth" type="text" inputmode="numeric" value="0" />
             <small style="color:#888;">인센티브 +, 패널티 -</small>
           </div>
           <div class="st-field">
             <span class="st-label">사료효율 인센티브 (원)</span>
-            <input class="st-input" id="f-incentive-feed" type="number" value="0" />
+            <input class="st-input comma-input" id="f-incentive-feed" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">등외 패널티 (원)</span>
-            <input class="st-input" id="f-penalty-grade" type="number" value="0" />
+            <input class="st-input comma-input" id="f-penalty-grade" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">선지급금 공제 (원)</span>
-            <input class="st-input" id="f-prepayment" type="number" value="0" />
+            <input class="st-input comma-input" id="f-prepayment" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">실 지급액 (원) <span class="badge-auto">계산</span></span>
@@ -296,11 +296,11 @@
         <div class="st-grid">
           <div class="st-field">
             <span class="st-label">매출액 (출하대금, 원)</span>
-            <input class="st-input" id="f-revenue" type="number" value="0" />
+            <input class="st-input comma-input" id="f-revenue" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">자돈비 (원)</span>
-            <input class="st-input" id="f-piglet-cost" type="number" value="0" />
+            <input class="st-input comma-input" id="f-piglet-cost" type="text" inputmode="numeric" value="0" />
           </div>
           <div class="st-field">
             <span class="st-label">운영비(사료) (원) <span class="badge-auto">계산</span></span>

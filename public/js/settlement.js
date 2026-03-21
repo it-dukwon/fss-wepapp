@@ -6,6 +6,30 @@ const API = window.location.hostname.includes("localhost")
   ? "http://localhost:3000/api/settlement"
   : "https://webapp-databricks-dashboard-c7a3fjgmb7d3dnhn.koreacentral-01.azurewebsites.net/api/settlement";
 
+// ─── 쉼표 입력 유틸 ──────────────────────────────────────────
+function numVal(id) {
+  const v = (document.getElementById(id)?.value || "").replace(/,/g, "");
+  return Number(v) || 0;
+}
+function setCommaVal(id, v) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = (v != null && v !== "" && !isNaN(v)) ? Number(v).toLocaleString("ko-KR") : "0";
+}
+function initCommaInputs() {
+  document.querySelectorAll(".comma-input").forEach((el) => {
+    el.addEventListener("focus", () => {
+      el.value = el.value.replace(/,/g, "");
+    });
+    el.addEventListener("blur", () => {
+      const raw = el.value.replace(/,/g, "");
+      const n = Number(raw);
+      if (raw !== "" && !isNaN(n)) el.value = n.toLocaleString("ko-KR");
+    });
+  });
+}
+document.addEventListener("DOMContentLoaded", initCommaInputs);
+
 function fmt(n, decimals = 0) {
   if (n == null || n === "" || isNaN(n)) return "-";
   return Number(n).toLocaleString("ko-KR", {
@@ -84,7 +108,7 @@ async function loadSettlement() {
 
     // ── ② 도폐사 실적 ──────────────────────────────
     document.getElementById("v-stock-in-count2").textContent  = fmt(d.stock_in_count) + " 두";
-    document.getElementById("f-claim-count").value            = d.claim_count || 0;
+    setCommaVal("f-claim-count", d.claim_count || 0);
     document.getElementById("v-total-dead").textContent       = fmt(d.total_dead) + " 두";
     document.getElementById("v-adj-dead").textContent         = fmt(d.adj_dead) + " 두";
     document.getElementById("v-mortality-act").textContent    = pct(d.mortality_act);
@@ -94,31 +118,31 @@ async function loadSettlement() {
     document.getElementById("v-settlement-count").textContent = fmt(d.settlement_count) + " 두";
 
     // ── ③ 등급 ─────────────────────────────────────
-    document.getElementById("f-grade-1plus").value     = d.manual.grade_1plus     || 0;
-    document.getElementById("f-grade-1").value         = d.manual.grade_1          || 0;
-    document.getElementById("f-grade-2").value         = d.manual.grade_2          || 0;
-    document.getElementById("f-grade-out-spec").value  = d.manual.grade_out_spec   || 0;
-    document.getElementById("f-grade-out-other").value = d.manual.grade_out_other  || 0;
-    document.getElementById("f-grade-penalty").value   = d.grade_penalty           || 0;
+    setCommaVal("f-grade-1plus",     d.manual.grade_1plus    || 0);
+    setCommaVal("f-grade-1",         d.manual.grade_1         || 0);
+    setCommaVal("f-grade-2",         d.manual.grade_2         || 0);
+    setCommaVal("f-grade-out-spec",  d.manual.grade_out_spec  || 0);
+    setCommaVal("f-grade-out-other", d.manual.grade_out_other || 0);
+    setCommaVal("f-grade-penalty",   d.grade_penalty          || 0);
 
     // ── ④ 사료 ─────────────────────────────────────
-    document.getElementById("f-feed-piglet").value     = d.feed_piglet || 0;
-    document.getElementById("f-feed-grow").value       = d.feed_grow   || 0;
-    document.getElementById("f-feed-cost-total").value = d.feed_cost   || 0;
+    setCommaVal("f-feed-piglet",     d.feed_piglet || 0);
+    setCommaVal("f-feed-grow",       d.feed_grow   || 0);
+    setCommaVal("f-feed-cost-total", d.feed_cost   || 0);
     updateFeedCalc(d);
 
     // ── ⑤ 위탁사육비 ───────────────────────────────
-    document.getElementById("f-base-fee").value          = d.base_fee         || 0;
-    document.getElementById("f-incentive-growth").value  = d.incentive_growth  || 0;
-    document.getElementById("f-incentive-feed").value    = d.incentive_feed    || 0;
-    document.getElementById("f-penalty-grade").value     = d.penalty_grade     || 0;
-    document.getElementById("f-prepayment").value        = d.prepayment        || 0;
+    setCommaVal("f-base-fee",         d.base_fee        || 0);
+    setCommaVal("f-incentive-growth", d.incentive_growth || 0);
+    setCommaVal("f-incentive-feed",   d.incentive_feed   || 0);
+    setCommaVal("f-penalty-grade",    d.penalty_grade    || 0);
+    setCommaVal("f-prepayment",       d.prepayment       || 0);
     document.getElementById("f-payment-note").value      = d.manual.payment_note || "";
     updatePaymentCalc(d);
 
     // ── ⑥ 수익 분석 ────────────────────────────────
-    document.getElementById("f-revenue").value     = d.revenue    || 0;
-    document.getElementById("f-piglet-cost").value = d.piglet_cost || 0;
+    setCommaVal("f-revenue",     d.revenue     || 0);
+    setCommaVal("f-piglet-cost", d.piglet_cost || 0);
     updateRevenueCalc(d);
 
     // ── ⑦ 이력 ─────────────────────────────────────
@@ -134,13 +158,13 @@ async function loadSettlement() {
 
 // ─── 실시간 계산 업데이트 ────────────────────────────────────
 function updateFeedCalc(d) {
-  const piglet = Number(document.getElementById("f-feed-piglet").value) || 0;
-  const grow   = Number(document.getElementById("f-feed-grow").value)   || 0;
+  const piglet = numVal("f-feed-piglet");
+  const grow   = numVal("f-feed-grow");
   const total  = piglet + grow;
   const wgain  = d.total_weight_gain || 0;
   const days   = d.breeding_days     || 0;
   const cnt    = d.stock_in_count    || 0;
-  const cost   = Number(document.getElementById("f-feed-cost-total").value) || 0;
+  const cost   = numVal("f-feed-cost-total");
 
   document.getElementById("v-feed-total").textContent    = fmt(total) + " kg";
   document.getElementById("v-feed-fcr").textContent      = wgain > 0 ? fmt(total / wgain, 2) : "-";
@@ -151,12 +175,12 @@ function updateFeedCalc(d) {
 }
 
 function updatePaymentCalc(d) {
-  const base   = Number(document.getElementById("f-base-fee").value)         || 0;
-  const ig     = Number(document.getElementById("f-incentive-growth").value)  || 0;
-  const ifd    = Number(document.getElementById("f-incentive-feed").value)    || 0;
-  const pg     = Number(document.getElementById("f-penalty-grade").value)     || 0;
-  const gpn    = Number(document.getElementById("f-grade-penalty").value)     || 0;
-  const prep   = Number(document.getElementById("f-prepayment").value)        || 0;
+  const base   = numVal("f-base-fee");
+  const ig     = numVal("f-incentive-growth");
+  const ifd    = numVal("f-incentive-feed");
+  const pg     = numVal("f-penalty-grade");
+  const gpn    = numVal("f-grade-penalty");
+  const prep   = numVal("f-prepayment");
   const net    = base + ig + ifd - pg - gpn - prep;
 
   document.getElementById("v-net-payment").textContent  = won(net);
@@ -165,9 +189,9 @@ function updatePaymentCalc(d) {
 }
 
 function updateRevenueCalc(d) {
-  const rev    = Number(document.getElementById("f-revenue").value)     || 0;
-  const pc     = Number(document.getElementById("f-piglet-cost").value) || 0;
-  const fc     = Number(document.getElementById("f-feed-cost-total").value) || 0;
+  const rev    = numVal("f-revenue");
+  const pc     = numVal("f-piglet-cost");
+  const fc     = numVal("f-feed-cost-total");
   const net    = updatePaymentCalc(d);
   const profit = rev - pc - fc - net;
 
@@ -307,25 +331,25 @@ async function saveSettlement() {
   msg.textContent = "저장 중...";
 
   const body = {
-    claim_count:           document.getElementById("f-claim-count").value,
-    std_mortality_rate:    document.getElementById("f-std-mortality-rate").value,
-    grade_1plus:           document.getElementById("f-grade-1plus").value,
-    grade_1:               document.getElementById("f-grade-1").value,
-    grade_2:               document.getElementById("f-grade-2").value,
-    grade_out_spec:        document.getElementById("f-grade-out-spec").value,
-    grade_out_other:       document.getElementById("f-grade-out-other").value,
-    grade_penalty:         document.getElementById("f-grade-penalty").value,
-    feed_piglet:           document.getElementById("f-feed-piglet").value,
-    feed_grow:             document.getElementById("f-feed-grow").value,
-    feed_cost_total:       document.getElementById("f-feed-cost-total").value,
-    base_fee:              document.getElementById("f-base-fee").value,
-    incentive_growth:      document.getElementById("f-incentive-growth").value,
-    incentive_feed:        document.getElementById("f-incentive-feed").value,
-    penalty_grade:         document.getElementById("f-penalty-grade").value,
-    prepayment:            document.getElementById("f-prepayment").value,
-    payment_note:          document.getElementById("f-payment-note").value.trim(),
-    revenue:               document.getElementById("f-revenue").value,
-    piglet_cost:           document.getElementById("f-piglet-cost").value,
+    claim_count:        numVal("f-claim-count"),
+    std_mortality_rate: document.getElementById("f-std-mortality-rate").value,
+    grade_1plus:        numVal("f-grade-1plus"),
+    grade_1:            numVal("f-grade-1"),
+    grade_2:            numVal("f-grade-2"),
+    grade_out_spec:     numVal("f-grade-out-spec"),
+    grade_out_other:    numVal("f-grade-out-other"),
+    grade_penalty:      numVal("f-grade-penalty"),
+    feed_piglet:        numVal("f-feed-piglet"),
+    feed_grow:          numVal("f-feed-grow"),
+    feed_cost_total:    numVal("f-feed-cost-total"),
+    base_fee:           numVal("f-base-fee"),
+    incentive_growth:   numVal("f-incentive-growth"),
+    incentive_feed:     numVal("f-incentive-feed"),
+    penalty_grade:      numVal("f-penalty-grade"),
+    prepayment:         numVal("f-prepayment"),
+    payment_note:       document.getElementById("f-payment-note").value.trim(),
+    revenue:            numVal("f-revenue"),
+    piglet_cost:        numVal("f-piglet-cost"),
   };
 
   try {
