@@ -110,13 +110,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
     const piglet_cost = Number(manual.piglet_cost ?? 0);
     const farm_net   = revenue - piglet_cost - feed_cost - net_payment;
 
-    // ── 현재 잔여두수 ─────────────────────────────────────────
-    const current_count = stock_in_count + Number(agg.event_stock_weight > 0 ? 0 : 0)
-      - total_dead - total_shipped;
-    // simpler:
-    const remaining = batch.prev_month_count
-      + events.reduce((s, e) => s + (e.transfer_in || 0), 0)
-      - total_dead - total_shipped;
+    // ── 현재 잔여두수 (사육두수 현황과 동일 로직) ───────────────────
+    const remaining = stock_in_count - total_dead - total_shipped;
 
     return {
       batch, manual, events,
@@ -231,6 +226,13 @@ module.exports = function settlementRoutes({ runPgQuery }) {
           return col == null || col < 12;
         });
       }
+
+      // M열 이후(13열~) 셀 값 제거
+      ws.eachRow((row) => {
+        row.eachCell({ includeEmpty: false }, (cell) => {
+          if (cell.col >= 13) cell.value = null;
+        });
+      });
 
       const asDate = (v) => v ? new Date(v) : null;
 
