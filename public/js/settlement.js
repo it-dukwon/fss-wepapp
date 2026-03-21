@@ -212,19 +212,24 @@ function renderHistory(d) {
   const rows  = [];
   let running = d.stock_in_count;
 
-  // 입식 초기 행
-  rows.push(`<tr class="ev-in">
-    <td>${fmtDate(d.stock_in_date)}</td>
-    <td><span class="ev-badge ev-badge-in">입식</span></td>
-    <td>${fmt(d.stock_in_count)}</td>
-    <td>${fmt(d.initial_stock_weight, 1)}</td>
-    <td>${fmt(d.avg_stock_weight, 2)}</td>
-    <td>-</td><td>-</td><td>-</td><td>-</td>
-    <td>${fmt(running)}</td><td>-</td>
-  </tr>`);
-
   for (const ev of d.events) {
-    if (ev.event_type === "death") {
+    const etype = ev.event_type;
+
+    if (etype === "stock_in" || (!etype && ev.transfer_in > 0)) {
+      running += (ev.transfer_in || 0);
+      const avgW = ev.stock_weight && ev.transfer_in
+        ? fmt(ev.stock_weight / ev.transfer_in, 2) : "-";
+      rows.push(`<tr class="ev-in">
+        <td>${fmtDate(ev.event_date)}</td>
+        <td><span class="ev-badge ev-badge-in">입식</span></td>
+        <td>${fmt(ev.transfer_in)}</td>
+        <td>${fmt(ev.stock_weight, 1)}</td>
+        <td>${avgW}</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>${fmt(running)}</td>
+        <td>${ev.note || ""}</td>
+      </tr>`);
+    } else if (etype === "death" || (!etype && (ev.deaths > 0 || ev.culled > 0))) {
       const cnt = (ev.deaths || 0) + (ev.culled || 0);
       running -= cnt;
       const dt = ev.death_type === "도태"
@@ -240,9 +245,9 @@ function renderHistory(d) {
         <td>${fmt(running)}</td>
         <td>${ev.note || ""}</td>
       </tr>`);
-    } else if (ev.event_type === "shipping") {
+    } else if (etype === "shipping" || (!etype && ev.shipped > 0)) {
       running -= (ev.shipped || 0);
-      const avg = ev.ship_weight && ev.shipped ? (ev.ship_weight / ev.shipped).toFixed(2) : "-";
+      const avgW = ev.ship_weight && ev.shipped ? fmt(ev.ship_weight / ev.shipped, 2) : "-";
       const outlets = [ev.distributor, ev.slaughterhouse, ev.meat_processor].filter(Boolean).join(" / ");
       rows.push(`<tr class="ev-ship">
         <td>${fmtDate(ev.event_date)}</td>
@@ -250,15 +255,20 @@ function renderHistory(d) {
         <td>-</td><td>-</td><td>-</td><td>-</td>
         <td>${fmt(ev.shipped)}</td>
         <td>${fmt(ev.ship_weight, 1)}</td>
-        <td>${avg}</td>
+        <td>${avgW}</td>
         <td>${fmt(running)}</td>
-        <td>${outlets}</td>
+        <td>${outlets || ev.note || ""}</td>
       </tr>`);
     }
   }
 
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#aaa;padding:12px;">이벤트 없음</td></tr>`;
+    return;
+  }
+
   // 합계 행
-  rows.push(`<tr>
+  rows.push(`<tr style="font-weight:700;background:#f8fbf8;">
     <td>합 계</td><td>-</td>
     <td>${fmt(d.stock_in_count)}</td>
     <td>${fmt(d.initial_stock_weight, 1)}</td>
