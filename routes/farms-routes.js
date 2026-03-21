@@ -16,6 +16,9 @@ module.exports = function farmsRoutes({ runPgQuery }) {
     runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS owner_email VARCHAR(200)`),
     runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS insurance_status VARCHAR(10)`),
     runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS insurance_expire DATE`),
+    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS bank_name VARCHAR(50)`),
+    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS account_number VARCHAR(50)`),
+    runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS account_holder VARCHAR(50)`),
   ]).catch((e) => console.error("farms migration error:", e.message));
 
   // ═══════════════════════════════════════════════════════════
@@ -141,6 +144,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
           f.owner_email,
           f."계약상태", f."계약시작일", f."계약종료일",
           f.insurance_status, f.insurance_expire,
+          f.bank_name, f.account_number, f.account_holder,
           f.feed_company_id, fc.company_name AS feed_company_name,
           f.manager_id, m.manager_name
         FROM list_farms f
@@ -163,6 +167,9 @@ module.exports = function farmsRoutes({ runPgQuery }) {
         계약종료일:        row["계약종료일"],
         insurance_status:  row.insurance_status ?? "",
         insurance_expire:  row.insurance_expire,
+        bank_name:         row.bank_name ?? "",
+        account_number:    row.account_number ?? "",
+        account_holder:    row.account_holder ?? "",
       }));
       res.json({ success: true, farms });
     } catch (err) {
@@ -175,8 +182,8 @@ module.exports = function farmsRoutes({ runPgQuery }) {
     try {
       const b = req.body || {};
       await runPgQuery(
-        `INSERT INTO list_farms ("농장명","지역","농장주",owner_email,"계약상태","계약시작일","계약종료일",feed_company_id,manager_id,insurance_status,insurance_expire)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        `INSERT INTO list_farms ("농장명","지역","농장주",owner_email,"계약상태","계약시작일","계약종료일",feed_company_id,manager_id,insurance_status,insurance_expire,bank_name,account_number,account_holder)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
         [
           b.농장명 || "", b.지역 || null, b.농장주 || null,
           b.owner_email || null,
@@ -184,6 +191,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
           parseDateOrNull(b.계약시작일), parseDateOrNull(b.계약종료일),
           b.feed_company_id || null, b.manager_id || null,
           b.insurance_status || null, parseDateOrNull(b.insurance_expire),
+          b.bank_name || null, b.account_number || null, b.account_holder || null,
         ]
       );
       auditLog(req, "INSERT", "farm", null, `농장 등록: ${b.농장명 || ""}`);
@@ -202,8 +210,9 @@ module.exports = function farmsRoutes({ runPgQuery }) {
       await runPgQuery(
         `UPDATE list_farms
          SET "농장명"=$1,"지역"=$2,"농장주"=$3,owner_email=$4,"계약상태"=$5,"계약시작일"=$6,"계약종료일"=$7,
-             feed_company_id=$8, manager_id=$9, insurance_status=$10, insurance_expire=$11
-         WHERE "농장ID"=$12`,
+             feed_company_id=$8, manager_id=$9, insurance_status=$10, insurance_expire=$11,
+             bank_name=$12, account_number=$13, account_holder=$14
+         WHERE "농장ID"=$15`,
         [
           b.농장명 || "", b.지역 || null, b.농장주 || null,
           b.owner_email || null,
@@ -211,6 +220,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
           parseDateOrNull(b.계약시작일), parseDateOrNull(b.계약종료일),
           b.feed_company_id || null, b.manager_id || null,
           b.insurance_status || null, parseDateOrNull(b.insurance_expire),
+          b.bank_name || null, b.account_number || null, b.account_holder || null,
           id,
         ]
       );

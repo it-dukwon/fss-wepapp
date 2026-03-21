@@ -92,7 +92,7 @@ function filterManagerSelect() {
 async function loadFarms() {
   const tbody = get('farm-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="14" class="ls-empty">로딩 중...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="17" class="ls-empty">로딩 중...</td></tr>';
 
   try {
     const r = await fetch(FARM_API, { credentials: 'include' });
@@ -100,14 +100,14 @@ async function loadFarms() {
     const { farms } = await r.json();
 
     if (!farms.length) {
-      tbody.innerHTML = '<tr><td colspan="14" class="ls-empty">등록된 농장이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="17" class="ls-empty">등록된 농장이 없습니다.</td></tr>';
       return;
     }
     tbody.innerHTML = '';
     farms.forEach(f => appendFarmRow(f, tbody));
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="14" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="17" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
 }
 
@@ -130,6 +130,9 @@ function appendFarmRow(f, tbody) {
     { val: fmtDate(f.계약종료일), key: '계약종료일', type: 'date', rawVal: toDateInput(f.계약종료일) },
     { val: f.insurance_status || '미가입', key: 'insurance_status', selectOpts: ['가입','미가입'] },
     { val: fmtDate(f.insurance_expire), key: 'insurance_expire', type: 'date', rawVal: toDateInput(f.insurance_expire) },
+    { val: f.bank_name,       key: 'bank_name' },
+    { val: f.account_number,  key: 'account_number' },
+    { val: f.account_holder,  key: 'account_holder' },
   ];
 
   cells.forEach(c => {
@@ -287,6 +290,9 @@ async function addFarm() {
     계약종료일:        get('fn-end')?.value                   || null,
     insurance_status,
     insurance_expire:  get('fn-insurance-expire')?.value      || null,
+    bank_name:         get('fn-bank-name')?.value.trim()      || null,
+    account_number:    get('fn-account-number')?.value.trim() || null,
+    account_holder:    get('fn-account-holder')?.value.trim() || null,
   };
 
   try {
@@ -296,7 +302,7 @@ async function addFarm() {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    ['fn-name','fn-region','fn-owner','fn-email','fn-start','fn-end','fn-insurance-expire'].forEach(id => { if (get(id)) get(id).value = ''; });
+    ['fn-name','fn-region','fn-owner','fn-email','fn-start','fn-end','fn-insurance-expire','fn-bank-name','fn-account-number','fn-account-holder'].forEach(id => { if (get(id)) get(id).value = ''; });
     get('fn-company').value = '';
     get('fn-manager').value = '';
     get('fn-status').value = '계약중';

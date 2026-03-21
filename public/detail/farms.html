@@ -71,6 +71,18 @@
           <input type="date" id="fn-end" />
         </div>
         <div class="ls-form-group">
+          <label>은행</label>
+          <input type="text" id="fn-bank-name" placeholder="예: 농협" />
+        </div>
+        <div class="ls-form-group">
+          <label>계좌번호</label>
+          <input type="text" id="fn-account-number" placeholder="000-0000-0000" />
+        </div>
+        <div class="ls-form-group">
+          <label>예금주</label>
+          <input type="text" id="fn-account-holder" />
+        </div>
+        <div class="ls-form-group">
           <label>보험가입유무</label>
           <select id="fn-insurance">
             <option selected>미가입</option>
@@ -95,11 +107,12 @@
             <tr>
               <th>ID</th><th>농장명</th><th>지역</th><th>농장주</th><th>이메일</th>
               <th>사료회사</th><th>관리자</th><th>계약상태</th>
-              <th>계약시작일</th><th>계약종료일</th><th>보험</th><th>보험만료일</th><th>수정</th><th>삭제</th>
+              <th>계약시작일</th><th>계약종료일</th><th>보험</th><th>보험만료일</th>
+              <th>은행</th><th>계좌번호</th><th>예금주</th><th>수정</th><th>삭제</th>
             </tr>
           </thead>
           <tbody id="farm-tbody">
-            <tr><td colspan="14" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="17" class="ls-empty">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>

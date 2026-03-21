@@ -42,7 +42,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
   // ─── 공통 계산 헬퍼 ──────────────────────────────────────────
   async function getSettlementData(batch_id) {
     const batchRes = await runPgQuery(
-      `SELECT b.*, f."농장명" AS farm_name, f."지역" AS region, f.owner_email
+      `SELECT b.*, f."농장명" AS farm_name, f."지역" AS region, f.owner_email,
+              f.bank_name, f.account_number, f.account_holder
        FROM livestock_batches b
        LEFT JOIN list_farms f ON f."농장ID" = b.farm_id
        WHERE b.batch_id = $1`,
@@ -251,7 +252,9 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
       ws.getCell("B2").value = `위 탁 사 육 정 산 서 (${batch.badge_name})`;
       ws.getCell("I4").value = batch.farm_name || batch.manager || "";
-      ws.getCell("I5").value = manual.farm_account || "";
+      const acct = [batch.bank_name, batch.account_number, batch.account_holder ? `(${batch.account_holder})` : ""]
+        .filter(Boolean).join(" ");
+      ws.getCell("I5").value = acct || manual.farm_account || "";
       ws.getCell("D6").value = asDate(stock_in_date);
       ws.getCell("F6").value = stock_in_count;
       ws.getCell("I6").value = initial_stock_weight;

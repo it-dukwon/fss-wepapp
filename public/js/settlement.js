@@ -61,7 +61,9 @@ async function loadSettlement() {
 
     // ── ① 기본 정보 ────────────────────────────────
     document.getElementById("v-farm-name").textContent        = d.batch.farm_name || d.batch.manager || "-";
-    document.getElementById("f-farm-account").value           = d.manual.farm_account || "";
+    document.getElementById("v-bank-name").textContent        = d.batch.bank_name || "-";
+    document.getElementById("v-account-number").textContent   = d.batch.account_number || "-";
+    document.getElementById("v-account-holder").textContent   = d.batch.account_holder || "-";
     document.getElementById("v-stock-in-date").textContent    = fmtDate(d.stock_in_date);
     document.getElementById("v-stock-in-count").textContent   = fmt(d.stock_in_count) + " 두";
     document.getElementById("f-initial-stock-weight").value  = d.initial_stock_weight || "";
@@ -280,7 +282,6 @@ async function saveSettlement() {
   msg.textContent = "저장 중...";
 
   const body = {
-    farm_account:          document.getElementById("f-farm-account").value.trim(),
     initial_stock_weight:  document.getElementById("f-initial-stock-weight").value || null,
     claim_count:           document.getElementById("f-claim-count").value,
     std_mortality_rate:    document.getElementById("f-std-mortality-rate").value,
