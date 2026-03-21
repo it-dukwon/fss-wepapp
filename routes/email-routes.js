@@ -101,21 +101,25 @@ module.exports = function emailRoutes({ runPgQuery, ensureAdmin }) {
   // ─────────────────────────────────────────────────────────
   router.post("/mortality-report", ensureAdmin, async (req, res) => {
     try {
-      // DB 수신자 목록 조회 (enabled = true)
-      const toList = await getEnabledRecipients(runPgQuery, "mortality_report");
-      // 없으면 .env 폴백
-      const to = toList.length > 0 ? toList : (process.env.EMAIL_RECIPIENTS || null);
-      if (!to || (Array.isArray(to) && to.length === 0)) {
+      // 요청 body에 to가 있으면 우선 사용, 없으면 DB 수신자 목록
+      let toStr = (req.body?.to || "").trim();
+      if (!toStr) {
+        const toList = await getEnabledRecipients(runPgQuery, "mortality_report");
+        toStr = toList.length > 0 ? toList.join(",") : (process.env.EMAIL_RECIPIENTS || "");
+      }
+      if (!toStr) {
         return res.status(400).json({ success: false, error: "수신자 이메일이 없습니다." });
       }
+
+      const ccStr = (req.body?.cc || "").trim() || undefined;
 
       const report = await fetchMortalityReport(runPgQuery);
       const generatedAt = dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm (KST)");
       const html = buildMortalityReportHtml(report, generatedAt);
 
-      const toStr = Array.isArray(to) ? to.join(",") : to;
       await sendMail({
         to: toStr,
+        cc: ccStr,
         subject: `[덕원농장] 폐사율 오버뷰 리포트 ${dayjs().tz("Asia/Seoul").format("YYYY-MM-DD")}`,
         html,
       });

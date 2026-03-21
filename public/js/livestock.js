@@ -502,27 +502,54 @@ async function saveSchedule() {
 // 이메일 발송
 // ─────────────────────────────────────────
 async function sendMortalityReport() {
-  const ok = await Swal.fire({
-    title: "폐사율 리포트를 이메일로 발송할까요?",
-    icon: "question",
+  const EMAIL_API = API.replace("/livestock", "/email");
+
+  // 현재 수신자 목록 조회
+  let defaultTo = "";
+  try {
+    const rRes = await fetch(EMAIL_API + "/recipients?alert_type=mortality_report", { credentials: "include" });
+    const rJson = await rRes.json();
+    if (rJson.success && Array.isArray(rJson.data)) {
+      defaultTo = rJson.data.filter(r => r.enabled).map(r => r.email).join(", ");
+    }
+  } catch (_) {}
+
+  const { value: formValues, isConfirmed } = await Swal.fire({
+    title: "폐사율 리포트 이메일 발송",
+    html: `
+      <div style="text-align:left;font-size:0.9rem;">
+        <label style="display:block;margin-bottom:4px;font-weight:600;">수신자 *</label>
+        <input id="swal-to" class="swal2-input" style="margin:0 0 12px;width:100%;box-sizing:border-box;"
+          placeholder="recipient@example.com" value="${defaultTo}" />
+        <label style="display:block;margin-bottom:4px;font-weight:600;">참조 (선택)</label>
+        <input id="swal-cc" class="swal2-input" style="margin:0;width:100%;box-sizing:border-box;"
+          placeholder="cc@example.com" />
+      </div>`,
     showCancelButton: true,
     confirmButtonText: "발송",
     cancelButtonText: "취소",
     confirmButtonColor: "#146C43",
+    preConfirm: () => ({
+      to: document.getElementById("swal-to").value.trim(),
+      cc: document.getElementById("swal-cc").value.trim(),
+    }),
   });
-  if (!ok.isConfirmed) return;
+
+  if (!isConfirmed || !formValues) return;
+  const { to, cc } = formValues;
+  if (!to) return Swal.fire({ icon: "warning", title: "수신자 이메일을 입력하세요." });
 
   try {
-    const EMAIL_API = API.replace("/livestock", "/email");
+    Swal.fire({ title: "발송 중...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const res = await fetch(EMAIL_API + "/mortality-report", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ to, cc: cc || undefined }),
     });
     const json = await res.json();
     if (json.success) {
-      Swal.fire({ icon: "success", title: "발송 완료!", text: "이메일이 수신자에게 발송되었습니다.", timer: 2500, showConfirmButton: false });
+      Swal.fire({ icon: "success", title: "발송 완료!", text: `${to} 으로 발송되었습니다.`, timer: 2500, showConfirmButton: false });
     } else {
       Swal.fire({ icon: "error", title: "발송 실패", text: json.error });
     }
