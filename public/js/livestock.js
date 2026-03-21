@@ -153,7 +153,7 @@ async function submitEvent() {
     if (!count) return Swal.fire({ icon: "warning", title: "두수를 입력하세요." });
     body = {
       ...body, death_type,
-      deaths: death_type === "폐사" ? count : 0,
+      deaths: death_type !== "도태" ? count : 0,
       culled: death_type === "도태" ? count : 0,
     };
 
@@ -227,10 +227,12 @@ async function loadEvents() {
         weight = e.stock_weight != null ? Number(e.stock_weight).toLocaleString() + " kg" : "-";
         extra  = "";
       } else if (etype === "death" || (!etype && (e.deaths > 0 || e.culled > 0))) {
-        const dt = e.death_type || (e.deaths > 0 ? "폐사" : "도태");
-        badge  = dt === "폐사"
-          ? `<span class="ev-badge ev-badge-death">폐사</span>`
-          : `<span class="ev-badge ev-badge-cull">도태</span>`;
+        const dt = e.death_type || (e.culled > 0 ? "도태" : "폐사");
+        badge  = dt === "도태"
+          ? `<span class="ev-badge ev-badge-cull">도태</span>`
+          : dt === "확인불가"
+          ? `<span class="ev-badge" style="background:#e2d9f3;color:#4a235a;">확인불가</span>`
+          : `<span class="ev-badge ev-badge-death">폐사</span>`;
         count  = fmt(e.deaths > 0 ? e.deaths : e.culled);
         weight = "-";
         extra  = "";
