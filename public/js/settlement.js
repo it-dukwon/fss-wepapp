@@ -66,7 +66,7 @@ async function loadSettlement() {
     document.getElementById("v-account-holder").textContent   = d.batch.account_holder || "-";
     document.getElementById("v-stock-in-date").textContent    = fmtDate(d.stock_in_date);
     document.getElementById("v-stock-in-count").textContent   = fmt(d.stock_in_count) + " 두";
-    document.getElementById("f-initial-stock-weight").value  = d.initial_stock_weight || "";
+    document.getElementById("v-initial-stock-weight").textContent = fmt(d.initial_stock_weight, 1) + " kg";
     document.getElementById("v-avg-stock-weight").textContent = fmt(d.avg_stock_weight, 2) + " kg";
     document.getElementById("v-last-ship-date").textContent   = fmtDate(d.last_ship_date);
     document.getElementById("v-total-shipped").textContent    = fmt(d.total_shipped) + " 두";
@@ -282,7 +282,6 @@ async function saveSettlement() {
   msg.textContent = "저장 중...";
 
   const body = {
-    initial_stock_weight:  document.getElementById("f-initial-stock-weight").value || null,
     claim_count:           document.getElementById("f-claim-count").value,
     std_mortality_rate:    document.getElementById("f-std-mortality-rate").value,
     grade_1plus:           document.getElementById("f-grade-1plus").value,
