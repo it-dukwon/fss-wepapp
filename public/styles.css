@@ -1143,6 +1143,6 @@ body{
 .ls-filter-row {
   display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px;
 }
-.ls-filter-row label { font-size: 0.82rem; font-weight: 600; color: #555; }
+.ls-filter-row label { font-size: 0.82rem; font-weight: 600; color: #555; white-space: nowrap; }
 .ls-filter-row input,
 .ls-filter-row select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.88rem; }

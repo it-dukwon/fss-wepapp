@@ -233,18 +233,74 @@ async function submitEvent() {
     return Swal.fire({ icon: "warning", title: "뱃지와 날짜는 필수입니다." });
   }
 
-  const pass_id = document.getElementById("ev-pass")?.value || "";
-  if (!pass_id) return Swal.fire({ icon: "warning", title: "파스를 선택하세요." });
-  let body = { batch_id, pass_id, event_date, event_type: currentEventType, note: note || null };
+  let pass_id = document.getElementById("ev-pass")?.value || "";
 
   if (currentEventType === "stock_in") {
+    // 입식두수·체중 먼저 검증
     const transfer_in  = Number(document.getElementById("ev-transfer").value) || 0;
     const stock_weight = Number(document.getElementById("ev-stock-weight").value) || 0;
     if (!transfer_in)  return Swal.fire({ icon: "warning", title: "입식두수를 입력하세요." });
     if (!stock_weight) return Swal.fire({ icon: "warning", title: "입식 총체중을 입력하세요." });
+
+    if (!pass_id) {
+      // 파스 없음 → 생성 후 진행
+      const { isConfirmed } = await Swal.fire({
+        icon: "question",
+        title: "파스가 없습니다",
+        text: "파스를 새로 생성하고 입식을 진행할까요?",
+        showCancelButton: true,
+        confirmButtonText: "파스 생성 후 진행",
+        cancelButtonText: "취소",
+        confirmButtonColor: "#146C43",
+      });
+      if (!isConfirmed) return;
+      try {
+        const { pass } = await apiFetch("/passes", { method: "POST", body: JSON.stringify({ batch_id }) });
+        pass_id = String(pass.pass_id);
+        await loadPassSelect(batch_id);
+        document.getElementById("ev-pass").value = pass_id;
+      } catch (err) {
+        return Swal.fire({ icon: "error", title: "파스 생성 실패", text: err.message });
+      }
+    } else {
+      // 파스 있음 → 현재 파스 확인
+      const passEl   = document.getElementById("ev-pass");
+      const passName = passEl?.options[passEl.selectedIndex]?.textContent || pass_id;
+      const { isConfirmed } = await Swal.fire({
+        icon: "question",
+        title: "입식 확인",
+        html: `현재 파스 <b>${passName}</b>에서 입식을 진행하시겠습니까?`,
+        showCancelButton: true,
+        confirmButtonText: "진행",
+        cancelButtonText: "취소",
+        confirmButtonColor: "#146C43",
+      });
+      if (!isConfirmed) return;
+    }
+
+    let body = { batch_id, pass_id, event_date, event_type: currentEventType, note: note || null };
     body = { ...body, transfer_in, stock_weight };
 
-  } else if (currentEventType === "death") {
+    const msg = document.getElementById("ev-msg");
+    msg.textContent = "저장 중...";
+    try {
+      await apiFetch("/events", { method: "POST", body: JSON.stringify(body) });
+      toast("success", "저장되었습니다");
+      msg.textContent = "";
+      resetEventForm();
+      loadEvents();
+    } catch (err) {
+      msg.textContent = "";
+      Swal.fire({ icon: "error", title: err.message });
+    }
+    return;
+  }
+
+  // 입식 외 이벤트: 파스 필수
+  if (!pass_id) return Swal.fire({ icon: "warning", title: "파스를 선택하세요." });
+  let body = { batch_id, pass_id, event_date, event_type: currentEventType, note: note || null };
+
+  if (currentEventType === "death") {
     const death_type = document.getElementById("ev-death-type").value;
     const count      = Number(document.getElementById("ev-death-count").value) || 0;
     if (!count) return Swal.fire({ icon: "warning", title: "두수를 입력하세요." });
