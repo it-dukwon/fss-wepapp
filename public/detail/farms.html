@@ -56,7 +56,11 @@
         </div>
         <div class="ls-form-group">
           <label>계약상태</label>
-          <input type="text" id="fn-status" placeholder="예: 계약중" />
+          <select id="fn-status">
+            <option>계약예정</option>
+            <option selected>계약중</option>
+            <option>만료</option>
+          </select>
         </div>
         <div class="ls-form-group">
           <label>계약시작일</label>
@@ -65,6 +69,17 @@
         <div class="ls-form-group">
           <label>계약종료일</label>
           <input type="date" id="fn-end" />
+        </div>
+        <div class="ls-form-group">
+          <label>보험가입유무</label>
+          <select id="fn-insurance">
+            <option selected>미가입</option>
+            <option>가입</option>
+          </select>
+        </div>
+        <div class="ls-form-group">
+          <label>보험만료일</label>
+          <input type="date" id="fn-insurance-expire" />
         </div>
       </div>
     </div>
@@ -80,11 +95,11 @@
             <tr>
               <th>ID</th><th>농장명</th><th>지역</th><th>농장주</th><th>이메일</th>
               <th>사료회사</th><th>관리자</th><th>계약상태</th>
-              <th>계약시작일</th><th>계약종료일</th><th>수정</th><th>삭제</th>
+              <th>계약시작일</th><th>계약종료일</th><th>보험</th><th>보험만료일</th><th>수정</th><th>삭제</th>
             </tr>
           </thead>
           <tbody id="farm-tbody">
-            <tr><td colspan="12" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="14" class="ls-empty">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>

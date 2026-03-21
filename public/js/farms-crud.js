@@ -92,7 +92,7 @@ function filterManagerSelect() {
 async function loadFarms() {
   const tbody = get('farm-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="12" class="ls-empty">로딩 중...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="14" class="ls-empty">로딩 중...</td></tr>';
 
   try {
     const r = await fetch(FARM_API, { credentials: 'include' });
@@ -100,14 +100,14 @@ async function loadFarms() {
     const { farms } = await r.json();
 
     if (!farms.length) {
-      tbody.innerHTML = '<tr><td colspan="11" class="ls-empty">등록된 농장이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="14" class="ls-empty">등록된 농장이 없습니다.</td></tr>';
       return;
     }
     tbody.innerHTML = '';
     farms.forEach(f => appendFarmRow(f, tbody));
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="12" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
 }
 
@@ -125,9 +125,11 @@ function appendFarmRow(f, tbody) {
     { val: f.owner_email, key: 'owner_email',   type: 'email' },
     { val: f.사료회사,    key: '사료회사',       fkId: f.feed_company_id, fkKey: 'feed_company_id' },
     { val: f.관리자,      key: '관리자',         fkId: f.manager_id, fkKey: 'manager_id' },
-    { val: f.계약상태,    key: '계약상태' },
+    { val: f.계약상태,    key: '계약상태', selectOpts: ['계약예정','계약중','만료'] },
     { val: fmtDate(f.계약시작일), key: '계약시작일', type: 'date', rawVal: toDateInput(f.계약시작일) },
     { val: fmtDate(f.계약종료일), key: '계약종료일', type: 'date', rawVal: toDateInput(f.계약종료일) },
+    { val: f.insurance_status || '미가입', key: 'insurance_status', selectOpts: ['가입','미가입'] },
+    { val: fmtDate(f.insurance_expire), key: 'insurance_expire', type: 'date', rawVal: toDateInput(f.insurance_expire) },
   ];
 
   cells.forEach(c => {
@@ -135,10 +137,11 @@ function appendFarmRow(f, tbody) {
     td.textContent = c.val ?? '';
     td.dataset.key = c.key;
     td.dataset.val = c.rawVal ?? (c.val ?? '');
-    if (c.fkId)  td.dataset.fkId  = c.fkId;
-    if (c.fkKey) td.dataset.fkKey = c.fkKey;
-    if (c.type)  td.dataset.type  = c.type;
-    if (c.readonly) td.dataset.readonly = '1';
+    if (c.fkId)       td.dataset.fkId       = c.fkId;
+    if (c.fkKey)      td.dataset.fkKey      = c.fkKey;
+    if (c.type)       td.dataset.type       = c.type;
+    if (c.readonly)   td.dataset.readonly   = '1';
+    if (c.selectOpts) td.dataset.selectOpts = JSON.stringify(c.selectOpts);
     tr.appendChild(td);
   });
 
@@ -188,6 +191,23 @@ function enterFarmEdit(tr, f) {
           ? item.manager_name + (item.company_name ? ` (${item.company_name})` : '')
           : item.company_name;
         if (String(item.id) === String(td.dataset.fkId)) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      td.innerHTML = '';
+      td.appendChild(sel);
+      return;
+    }
+
+    // 고정 옵션 select (계약상태, 보험가입유무)
+    if (td.dataset.selectOpts) {
+      const opts = JSON.parse(td.dataset.selectOpts);
+      const sel = document.createElement('select');
+      sel.style.width = '100%';
+      opts.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o;
+        opt.textContent = o;
+        if (o === (td.dataset.val || td.textContent.trim())) opt.selected = true;
         sel.appendChild(opt);
       });
       td.innerHTML = '';
@@ -254,16 +274,19 @@ async function addFarm() {
   const 농장명 = get('fn-name')?.value.trim();
   if (!농장명) { Swal.fire({ icon: 'warning', title: '농장명을 입력하세요' }); return; }
 
+  const insurance_status = get('fn-insurance')?.value || '미가입';
   const body = {
     농장명,
-    지역:            get('fn-region')?.value.trim() || null,
-    농장주:          get('fn-owner')?.value.trim()  || null,
-    owner_email:     get('fn-email')?.value.trim()  || null,
-    feed_company_id: get('fn-company')?.value       || null,
-    manager_id:      get('fn-manager')?.value       || null,
-    계약상태:        get('fn-status')?.value.trim() || null,
-    계약시작일:      get('fn-start')?.value         || null,
-    계약종료일:      get('fn-end')?.value           || null,
+    지역:              get('fn-region')?.value.trim()         || null,
+    농장주:            get('fn-owner')?.value.trim()          || null,
+    owner_email:       get('fn-email')?.value.trim()          || null,
+    feed_company_id:   get('fn-company')?.value               || null,
+    manager_id:        get('fn-manager')?.value               || null,
+    계약상태:          get('fn-status')?.value                || null,
+    계약시작일:        get('fn-start')?.value                 || null,
+    계약종료일:        get('fn-end')?.value                   || null,
+    insurance_status,
+    insurance_expire:  get('fn-insurance-expire')?.value      || null,
   };
 
   try {
@@ -273,11 +296,17 @@ async function addFarm() {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    ['fn-name','fn-region','fn-owner','fn-email','fn-status','fn-start','fn-end'].forEach(id => { if (get(id)) get(id).value = ''; });
+    ['fn-name','fn-region','fn-owner','fn-email','fn-start','fn-end','fn-insurance-expire'].forEach(id => { if (get(id)) get(id).value = ''; });
     get('fn-company').value = '';
     get('fn-manager').value = '';
+    get('fn-status').value = '계약중';
+    get('fn-insurance').value = '미가입';
     await loadFarms();
-    Swal.fire({ icon: 'success', title: '등록 완료', timer: 1200, showConfirmButton: false });
+    if (insurance_status === '미가입') {
+      Swal.fire({ icon: 'warning', title: '보험 미가입 상태', text: '해당 농장의 보험 가입 여부를 확인해 주세요.', confirmButtonText: '확인' });
+    } else {
+      Swal.fire({ icon: 'success', title: '등록 완료', timer: 1200, showConfirmButton: false });
+    }
   } catch (err) {
     Swal.fire({ icon: 'error', title: '등록 실패', text: err.message });
   }
