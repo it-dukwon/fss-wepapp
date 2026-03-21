@@ -121,11 +121,11 @@ function attachEntraAuth(app) {
       transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
     }
     .btn-ms {
-      background: #2563eb;
+      background: #146C43;
       color: #fff;
-      box-shadow: 0 2px 10px rgba(37,99,235,0.25);
+      box-shadow: 0 2px 10px rgba(20,108,67,0.25);
     }
-    .btn-ms:hover { background: #1d4ed8; box-shadow: 0 4px 16px rgba(37,99,235,0.35); transform: translateY(-1px); }
+    .btn-ms:hover { background: #0f5235; box-shadow: 0 4px 16px rgba(20,108,67,0.35); transform: translateY(-1px); }
     .btn-ms:active { transform: translateY(0); }
     .btn-ms svg { flex-shrink: 0; }
     .btn-outline {

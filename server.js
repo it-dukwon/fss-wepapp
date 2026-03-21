@@ -279,6 +279,37 @@ app.post("/upload", upload.array("xlsFiles", 50), async (req, res) => {
 });
 
 // ------------------------------------------------------------
+// DAT 전체 리셋 (Databricks 4개 테이블 DELETE)
+// POST /upload/reset-dat
+// ------------------------------------------------------------
+app.post("/upload/reset-dat", ensureAuth, async (req, res) => {
+  const TABLES = [
+    "dbx_dukwon.auto_dukwon.input_dedup_history_notmachine",
+    "dbx_dukwon.auto_dukwon.input_table_notmachine",
+    "dbx_dukwon.auto_dukwon.output_table",
+    "dbx_dukwon.auto_dukwon.dm_farm",
+  ];
+  try {
+    const token = await getDatabricksToken();
+    const results = [];
+    for (const table of TABLES) {
+      try {
+        await runDatabricksSQL(token, `DELETE FROM ${table}`);
+        results.push({ table, success: true });
+      } catch (err) {
+        results.push({ table, success: false, error: err.message });
+      }
+    }
+    const failed = results.filter(r => !r.success).length;
+    console.log("[DAT Reset]", results);
+    res.json({ results, message: failed === 0 ? "✅ 전체 리셋 완료" : `⚠️ ${failed}건 실패` });
+  } catch (err) {
+    console.error("[DAT Reset] 실패:", err.message);
+    res.status(500).json({ message: "❌ 리셋 실패: " + err.message });
+  }
+});
+
+// ------------------------------------------------------------
 // Databricks OAuth 토큰 발급
 // ------------------------------------------------------------
 async function getDatabricksToken() {

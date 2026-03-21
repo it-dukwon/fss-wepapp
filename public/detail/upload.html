@@ -35,6 +35,20 @@
     <div id="result-list" style="margin-top:16px;"></div>
   </div>
 
+  <div class="ls-card" style="margin-top:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <h3 class="ls-section-title" style="margin:0;">전체 DAT 리셋</h3>
+        <p style="font-size:0.82rem;color:#888;margin:4px 0 0;">Databricks 4개 테이블의 모든 데이터를 삭제합니다.</p>
+      </div>
+      <button class="ls-btn ls-btn-red" id="btnReset" onclick="resetDat()">
+        <i class="fa-solid fa-trash-can"></i> 전체 리셋
+      </button>
+    </div>
+    <div id="reset-result"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     document.getElementById("fileInput").addEventListener("change", function () {
       const files = [...this.files];
@@ -90,6 +104,60 @@
         btnUpload.disabled = false;
       }
     });
+    async function resetDat() {
+      const { isConfirmed } = await Swal.fire({
+        icon: "warning",
+        title: "전체 DAT 리셋",
+        html: `<p>Databricks의 다음 4개 테이블 데이터를 <b>모두 삭제</b>합니다.<br><br>
+          <code style="font-size:0.78rem;line-height:1.8;text-align:left;display:block;">
+            input_dedup_history_notmachine<br>
+            input_table_notmachine<br>
+            output_table<br>
+            dm_farm
+          </code></p>`,
+        showCancelButton: true,
+        confirmButtonText: "리셋 실행",
+        cancelButtonText: "취소",
+        confirmButtonColor: "#d9534f",
+      });
+      if (!isConfirmed) return;
+
+      const btn = document.getElementById("btnReset");
+      const resultEl = document.getElementById("reset-result");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 처리 중...`;
+      resultEl.innerHTML = "";
+
+      try {
+        const res = await fetch("/upload/reset-dat", { method: "POST", credentials: "same-origin" });
+        const data = await res.json();
+
+        if (data.results) {
+          resultEl.innerHTML = `
+            <p style="font-weight:700;margin-bottom:8px;">${data.message}</p>
+            <table class="ls-table" style="max-width:600px;">
+              <thead><tr><th>테이블</th><th>결과</th></tr></thead>
+              <tbody>
+                ${data.results.map(r => `
+                  <tr>
+                    <td style="font-size:0.82rem;">${r.table}</td>
+                    <td>${r.success
+                      ? `<span style="color:#146C43;font-weight:700;">✅ 완료</span>`
+                      : `<span style="color:#d9534f;font-weight:700;">❌ ${r.error || "실패"}</span>`
+                    }</td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>`;
+        } else {
+          resultEl.innerHTML = `<p style="color:#d9534f;">${data.message || "오류 발생"}</p>`;
+        }
+      } catch (err) {
+        resultEl.innerHTML = `<p style="color:#d9534f;">❌ 오류: ${err.message}</p>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> 전체 리셋`;
+      }
+    }
   </script>
   <script src="/js/page-view-log.js" data-page="등판정 업로드"></script>
 </body>
