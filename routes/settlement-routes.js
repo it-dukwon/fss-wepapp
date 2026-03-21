@@ -246,7 +246,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.readFile(path.join(__dirname, "../templates/settlement_template.xlsx"));
-      const ws = wb.getWorksheet(1);
+      const ws = wb.worksheets[0];
       const asDate = (v) => v ? new Date(v) : null;
 
       ws.getCell("B2").value = `위 탁 사 육 정 산 서 (${batch.badge_name})`;
