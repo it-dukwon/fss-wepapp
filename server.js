@@ -233,10 +233,10 @@ app.get("/", (req, res) => {
 // ------------------------------------------------------------
 // 업로드
 // ------------------------------------------------------------
-app.post("/upload", upload.single("xlsFile"), async (req, res) => {
-  const filePath = req.file.path;
-  const timestamp = dayjs().tz("Asia/Seoul").format("YYYYMMDD_HHmmss");
-  const fileName = `${timestamp}.xls`;
+app.post("/upload", upload.array("xlsFiles", 50), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ results: [], message: "파일이 없습니다." });
+  }
 
   try {
     const serviceClient = DataLakeServiceClient.fromConnectionString(
@@ -251,15 +251,27 @@ app.post("/upload", upload.single("xlsFile"), async (req, res) => {
       return res.status(400).json({ message: "❌ File system does not exist." });
     }
 
-    const fileClient = fileSystemClient.getFileClient(fileName);
+    const results = [];
+    for (const file of req.files) {
+      const timestamp = dayjs().tz("Asia/Seoul").format("YYYYMMDD_HHmmss_SSS");
+      const ext = path.extname(file.originalname) || ".xls";
+      const fileName = `${timestamp}${ext}`;
+      try {
+        const fileClient = fileSystemClient.getFileClient(fileName);
+        await fileClient.create();
+        const fileContent = fs.readFileSync(file.path);
+        await fileClient.append(fileContent, 0, fileContent.length);
+        await fileClient.flush(fileContent.length);
+        fs.unlinkSync(file.path);
+        results.push({ original: file.originalname, fileName, success: true });
+      } catch (err) {
+        try { fs.unlinkSync(file.path); } catch (_) {}
+        results.push({ original: file.originalname, success: false, error: err.message });
+      }
+    }
 
-    await fileClient.create();
-    const fileContent = fs.readFileSync(filePath);
-    await fileClient.append(fileContent, 0, fileContent.length);
-    await fileClient.flush(fileContent.length);
-
-    fs.unlinkSync(filePath);
-    res.json({ message: "✅ 업로드 성공!", fileName });
+    const failed = results.filter(r => !r.success).length;
+    res.json({ results, message: failed === 0 ? "✅ 전체 업로드 성공!" : `⚠️ ${failed}건 실패` });
   } catch (err) {
     console.error("❌ 업로드 실패:", err.message || err);
     res.status(500).json({ message: "❌ 업로드 실패" });

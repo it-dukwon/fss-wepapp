@@ -86,8 +86,12 @@ async function loadPassStatus(view) {
                          onclick="createFirstPass(${p.batch_id}, '${p.badge_name.replace(/'/g, "\\'")}')">파스 생성</button>`;
       } else if (p.pass_status === "active") {
         statusBadge = `<span class="ev-badge" style="background:#d4edda;color:#155724;">활성</span>`;
-        actionBtn   = `<button class="ls-btn ls-btn-primary" style="padding:3px 10px;font-size:0.82rem;"
-                         onclick="nextPass(${p.pass_id}, '${p.pass_name.replace(/'/g, "\\'")}', ${p.current_count})">다음 파스 →</button>`;
+        actionBtn   = `<div style="display:flex;gap:4px;">
+                         <button class="ls-btn ls-btn-primary" style="padding:3px 10px;font-size:0.82rem;"
+                           onclick="nextPass(${p.pass_id}, '${p.pass_name.replace(/'/g, "\\'")}', ${p.current_count})">다음 파스 →</button>
+                         <button class="ls-btn ls-btn-red" style="padding:3px 10px;font-size:0.82rem;"
+                           onclick="deletePass(${p.pass_id}, '${p.pass_name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-trash"></i></button>
+                       </div>`;
       } else {
         statusBadge = `<span class="ev-badge" style="background:#e2e3e5;color:#383d41;">완료</span>`;
         actionBtn   = `-`;
@@ -162,6 +166,27 @@ async function nextPass(pass_id, pass_name, current_count) {
   try {
     const { new_pass } = await apiFetch(`/passes/${pass_id}/next`, { method: "POST", body: JSON.stringify({}) });
     toast("success", `${new_pass.pass_name} 파스가 생성되었습니다`);
+    loadPassStatus();
+  } catch (err) {
+    Swal.fire({ icon: "error", title: err.message });
+  }
+}
+
+// 최신 파스 삭제
+async function deletePass(pass_id, pass_name) {
+  const { isConfirmed } = await Swal.fire({
+    icon: "warning",
+    title: "파스 삭제",
+    html: `<p>"<b>${pass_name}</b>" 파스와 해당 파스의 <b>모든 이벤트</b>가 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.</p>`,
+    showCancelButton: true,
+    confirmButtonText: "삭제",
+    cancelButtonText: "취소",
+    confirmButtonColor: "#d9534f",
+  });
+  if (!isConfirmed) return;
+  try {
+    const { deleted_events } = await apiFetch(`/passes/${pass_id}`, { method: "DELETE" });
+    toast("success", `${pass_name} 삭제 완료 (이벤트 ${deleted_events}건)`);
     loadPassStatus();
   } catch (err) {
     Swal.fire({ icon: "error", title: err.message });

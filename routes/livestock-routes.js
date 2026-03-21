@@ -413,6 +413,60 @@ module.exports = function livestockRoutes({ runPgQuery }) {
   });
 
   // ─────────────────────────────────────────
+  // 최신 파스 삭제
+  // DELETE /api/livestock/passes/:id
+  // ─────────────────────────────────────────
+  router.delete("/passes/:id", async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid id" });
+    try {
+      // 파스 조회 및 검증
+      const passRes = await runPgQuery(
+        `SELECT p.*, b.badge_name FROM livestock_passes p
+         JOIN livestock_batches b ON b.batch_id = p.batch_id
+         WHERE p.pass_id = $1`,
+        [id]
+      );
+      const pass = passRes.rows[0];
+      if (!pass) return res.status(404).json({ success: false, error: "파스를 찾을 수 없습니다." });
+
+      // 해당 배치에서 가장 최신 파스인지 확인
+      const latestRes = await runPgQuery(
+        `SELECT pass_id FROM livestock_passes WHERE batch_id = $1 ORDER BY pass_no DESC LIMIT 1`,
+        [pass.batch_id]
+      );
+      if (latestRes.rows[0]?.pass_id !== id) {
+        return res.status(400).json({ success: false, error: "최신 파스만 삭제할 수 있습니다." });
+      }
+
+      // 이 파스에 연결된 이벤트 삭제
+      const evtDel = await runPgQuery(
+        `DELETE FROM livestock_events WHERE pass_id = $1 RETURNING event_id`,
+        [id]
+      );
+
+      // 파스 삭제
+      await runPgQuery(`DELETE FROM livestock_passes WHERE pass_id = $1`, [id]);
+
+      // 이전 파스가 있으면 active로 복원
+      if (pass.pass_no > 1) {
+        await runPgQuery(
+          `UPDATE livestock_passes SET status = 'active', ended_at = NULL
+           WHERE batch_id = $1 AND pass_no = $2`,
+          [pass.batch_id, pass.pass_no - 1]
+        );
+      }
+
+      auditLog(req, "DELETE", "livestock_pass", id,
+        `파스 삭제: ${pass.pass_name} (이벤트 ${evtDel.rowCount}건 함께 삭제)`);
+      res.json({ success: true, deleted_events: evtDel.rowCount });
+    } catch (err) {
+      console.error("Delete pass error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────
   // 이벤트 목록
   // GET /api/livestock/events?batch_id=&date_from=&date_to=
   // ─────────────────────────────────────────

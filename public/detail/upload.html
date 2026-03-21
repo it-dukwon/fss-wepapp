@@ -20,25 +20,75 @@
         <h3 class="ls-section-title" style="margin:0;">XLS 파일 업로드</h3>
         <div style="display:flex;align-items:center;gap:8px;">
           <span id="status" style="font-size:0.85rem;color:#555;"></span>
-          <button type="submit" class="ls-btn ls-btn-primary"><i class="fa-solid fa-upload"></i> 업로드</button>
+          <button type="submit" class="ls-btn ls-btn-primary" id="btnUpload">
+            <i class="fa-solid fa-upload"></i> 업로드
+          </button>
         </div>
       </div>
-      <div class="ls-form-group" style="max-width:400px;">
-        <label>파일 선택</label>
-        <input type="file" name="xlsFile" accept=".xls,.xlsx" required />
+      <div class="ls-form-group" style="max-width:520px;">
+        <label>파일 선택 <span style="font-size:0.8rem;color:#888;">(여러 파일 동시 선택 가능)</span></label>
+        <input type="file" name="xlsFiles" id="fileInput" accept=".xls,.xlsx" multiple required />
       </div>
+      <div id="file-list" style="margin-top:8px;font-size:0.83rem;color:#555;"></div>
     </form>
+
+    <div id="result-list" style="margin-top:16px;"></div>
   </div>
 
   <script>
+    document.getElementById("fileInput").addEventListener("change", function () {
+      const files = [...this.files];
+      const el = document.getElementById("file-list");
+      if (!files.length) { el.innerHTML = ""; return; }
+      el.innerHTML = files.map(f =>
+        `<div style="padding:2px 0;"><i class="fa-solid fa-file-excel" style="color:#1a7a3e;margin-right:5px;"></i>${f.name}</div>`
+      ).join("");
+    });
+
     document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const statusEl = document.getElementById("status");
-      statusEl.textContent = '업로드 중...';
-      const formData = new FormData(e.target);
-      const res = await fetch("/upload", { method: "POST", body: formData });
-      const result = await res.json();
-      statusEl.textContent = result.message;
+      const files = document.getElementById("fileInput").files;
+      if (!files.length) return;
+
+      const statusEl  = document.getElementById("status");
+      const resultEl  = document.getElementById("result-list");
+      const btnUpload = document.getElementById("btnUpload");
+
+      statusEl.textContent = `업로드 중... (0 / ${files.length})`;
+      btnUpload.disabled = true;
+      resultEl.innerHTML = "";
+
+      const formData = new FormData();
+      for (const f of files) formData.append("xlsFiles", f);
+
+      try {
+        const res = await fetch("/upload", { method: "POST", body: formData });
+        const data = await res.json();
+
+        statusEl.textContent = data.message || "";
+
+        if (data.results && data.results.length) {
+          resultEl.innerHTML = `
+            <table class="ls-table" style="max-width:680px;">
+              <thead><tr><th>원본 파일명</th><th>결과</th></tr></thead>
+              <tbody>
+                ${data.results.map(r => `
+                  <tr>
+                    <td>${r.original}</td>
+                    <td>${r.success
+                      ? `<span style="color:#146C43;font-weight:700;">✅ 성공</span>`
+                      : `<span style="color:#d9534f;font-weight:700;">❌ 실패: ${r.error || ""}</span>`
+                    }</td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>`;
+        }
+      } catch (err) {
+        statusEl.textContent = "❌ 업로드 실패: " + err.message;
+        statusEl.style.color = "#d9534f";
+      } finally {
+        btnUpload.disabled = false;
+      }
     });
   </script>
   <script src="/js/page-view-log.js" data-page="등판정 업로드"></script>
