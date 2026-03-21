@@ -226,7 +226,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
         stock_in_count, stock_in_date, initial_stock_weight, avg_stock_weight,
         total_shipped, total_ship_weight, avg_ship_weight, last_ship_date,
         breeding_days, total_weight_gain, daily_gain_g, daily_gain_per,
-        total_dead, claim_count, adj_dead, mortality_act,
+        total_dead, total_deducted, claim_count, adj_dead, mortality_act,
         std_rate, std_head, deduct_head, settlement_count,
         feed_piglet, feed_grow, feed_total, feed_cost,
         feed_fcr, feed_daily, feed_per_head, feed_avg_cost,
