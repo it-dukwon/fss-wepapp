@@ -38,6 +38,7 @@
     "cors": "^2.8.5",
     "dayjs": "^1.11.19",
     "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
     "express": "^4.22.1",
     "express-session": "^1.18.2",
     "multer": "^2.0.2",
