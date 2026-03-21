@@ -421,15 +421,17 @@ async function loadMortality() {
       else if (mortality <= benchmark * 1.5) { statusClass = "status-warn"; statusLabel = "⚠️ 주의"; }
       else                               { statusClass = "status-bad";  statusLabel = "🔴 불량"; }
 
+      const diff = parseFloat(r.diff_pct) || 0;
+      const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%";
       return `<tr>
         <td style="font-weight:700;">${r.badge_name}</td>
         <td>${r.manager || "-"}</td>
         <td>${fmtDate(r.stock_in_date)}</td>
         <td>${fmt(r.stock_in_count)}</td>
-        <td>${r.months_elapsed ?? "-"}</td>
+        <td>${r.days_elapsed != null ? `${r.days_elapsed}일 / ${r.months_elapsed}월` : "-"}</td>
         <td class="num-red">${fmt(r.total_deaths)}</td>
-        <td class="${mortality > benchmark ? "num-red" : ""}">${mortality.toFixed(2)}%</td>
         <td>${benchmark.toFixed(2)}%</td>
+        <td class="${mortality > benchmark ? "num-red" : ""}">${mortality.toFixed(2)}% <span style="font-size:0.85em;color:${diff > 0 ? "#d9534f" : "#146C43"};">(${diffStr})</span></td>
         <td class="${statusClass}">${statusLabel}</td>
       </tr>`;
     }).join("");

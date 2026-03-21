@@ -294,32 +294,47 @@ module.exports = function livestockRoutes({ runPgQuery }) {
   // ─────────────────────────────────────────
   router.get("/report/mortality", async (req, res) => {
     try {
+      const metaRes = await runPgQuery(`SELECT value FROM app_settings WHERE key = 'mortality_benchmark_monthly_pct'`);
+      const benchmarkRate = parseFloat(metaRes.rows[0]?.value ?? "0.5");
+
       const result = await runPgQuery(`
         SELECT
           b.batch_id,
           b.badge_name,
           b.manager,
-          b.stock_in_date,
-          b.stock_in_count,
+          COALESCE(MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END), b.stock_in_date) AS stock_in_date,
+          (b.stock_in_count + COALESCE(SUM(e.transfer_in), 0))::INT                  AS stock_in_count,
           b.status,
           COALESCE(SUM(e.deaths), 0)::INT                                             AS total_deaths,
           COALESCE(SUM(e.culled), 0)::INT                                             AS total_culled,
           ROUND(
-            COALESCE(SUM(e.deaths), 0)::NUMERIC / NULLIF(b.stock_in_count, 0) * 100, 2
+            COALESCE(SUM(e.deaths), 0)::NUMERIC
+            / NULLIF(b.stock_in_count + COALESCE(SUM(e.transfer_in), 0), 0) * 100, 2
           )                                                                            AS mortality_pct,
+          (CURRENT_DATE - COALESCE(MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END), b.stock_in_date) + 1)
+                                                                                      AS days_elapsed,
           ROUND(
-            EXTRACT(EPOCH FROM (NOW() - b.stock_in_date::TIMESTAMPTZ)) / (30.0 * 86400), 1
-          )                                                                            AS months_elapsed,
-          ROUND(
-            EXTRACT(EPOCH FROM (NOW() - b.stock_in_date::TIMESTAMPTZ)) / (30.0 * 86400) * 0.5, 2
-          )                                                                            AS benchmark_pct
+            (CURRENT_DATE - COALESCE(MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END), b.stock_in_date) + 1)::NUMERIC / 30.0, 1
+          )                                                                            AS months_elapsed
         FROM livestock_batches b
         LEFT JOIN livestock_events e ON e.batch_id = b.batch_id
         WHERE b.status = 'active'
         GROUP BY b.batch_id
         ORDER BY mortality_pct DESC NULLS LAST
       `);
-      res.json({ success: true, report: result.rows });
+
+      const report = result.rows.map((r) => {
+        const months = parseFloat(r.months_elapsed) || 0;
+        const benchmarkPct = Math.round(months * benchmarkRate * 100) / 100;
+        const mortalityPct = parseFloat(r.mortality_pct) || 0;
+        return {
+          ...r,
+          benchmark_pct: benchmarkPct,
+          diff_pct: Math.round((mortalityPct - benchmarkPct) * 100) / 100,
+        };
+      });
+
+      res.json({ success: true, report });
     } catch (err) {
       console.error("Mortality report error:", err);
       res.status(500).json({ success: false, error: err.message });

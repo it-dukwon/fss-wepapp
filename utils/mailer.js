@@ -34,6 +34,8 @@ function buildMortalityReportHtml(report, generatedAt) {
   const rows = report.map((r) => {
     const mortality = parseFloat(r.mortality_pct) || 0;
     const benchmark = parseFloat(r.benchmark_pct) || 0;
+    const diff = parseFloat(r.diff_pct) || 0;
+    const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%";
     let statusColor, statusLabel;
     if (mortality <= benchmark)             { statusColor = "#146C43"; statusLabel = "✅ 양호"; }
     else if (mortality <= benchmark * 1.5)  { statusColor = "#e07800"; statusLabel = "⚠️ 주의"; }
@@ -45,10 +47,10 @@ function buildMortalityReportHtml(report, generatedAt) {
         <td>${r.manager || "-"}</td>
         <td>${r.stock_in_date ? String(r.stock_in_date).slice(0, 10).replace(/-/g, ".") : "-"}</td>
         <td>${r.stock_in_count ?? "-"}</td>
-        <td>${r.months_elapsed ?? "-"}</td>
+        <td>${r.days_elapsed != null ? `${r.days_elapsed}일 / ${r.months_elapsed}월` : "-"}</td>
         <td style="color:#d9534f;font-weight:600;">${r.total_deaths ?? 0}</td>
-        <td style="color:${mortality > benchmark ? "#d9534f" : "#333"};font-weight:600;">${mortality.toFixed(2)}%</td>
         <td>${benchmark.toFixed(2)}%</td>
+        <td style="color:${mortality > benchmark ? "#d9534f" : "#333"};font-weight:600;">${mortality.toFixed(2)}% <span style="font-size:0.85em;color:${diff > 0 ? "#d9534f" : "#146C43"};">(${diffStr})</span></td>
         <td style="color:${statusColor};font-weight:700;">${statusLabel}</td>
       </tr>`;
   }).join("");
@@ -69,10 +71,10 @@ function buildMortalityReportHtml(report, generatedAt) {
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">관리자</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">입식일</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">입식두수</th>
-          <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">경과(월)</th>
+          <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">경과일/경과월</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">누적폐사</th>
-          <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">누적폐사율</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">벤치마크</th>
+          <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">누적폐사율</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">평가</th>
         </tr>
       </thead>

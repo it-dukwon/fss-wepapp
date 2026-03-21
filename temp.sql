@@ -2,6 +2,11 @@
 -- 실행 후 제거하거나 별도 보관. 이미 적용된 항목은 주석 처리.
 -- 최근 변경순 (위가 최신)
 
+-- [2026-03-21] 폐사율 벤치마크 기본값 (월 0.5%)
+INSERT INTO app_settings (key, value)
+VALUES ('mortality_benchmark_monthly_pct', '0.5')
+ON CONFLICT (key) DO NOTHING;
+
 -- [2026-03-21] 농장 은행/계좌 정보
 ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS bank_name       VARCHAR(50);
 ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS account_number  VARCHAR(50);
