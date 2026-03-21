@@ -23,14 +23,14 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
     const aggRes = await runPgQuery(
       `SELECT
-         COALESCE(SUM(CASE WHEN event_type='stock_in' THEN transfer_in  ELSE 0 END), 0)::INT AS event_stock_in_count,
-         COALESCE(SUM(CASE WHEN event_type='stock_in' THEN stock_weight ELSE 0 END), 0) AS event_stock_weight,
-         COALESCE(SUM(CASE WHEN event_type='shipping' THEN shipped      ELSE 0 END), 0)::INT AS total_shipped,
-         COALESCE(SUM(CASE WHEN event_type='shipping' THEN ship_weight  ELSE 0 END), 0) AS total_ship_weight,
+         COALESCE(SUM(transfer_in),  0)::INT AS total_transfer_in,
+         COALESCE(SUM(stock_weight), 0)       AS total_stock_weight,
+         COALESCE(SUM(CASE WHEN event_type='shipping' THEN shipped     ELSE 0 END), 0)::INT AS total_shipped,
+         COALESCE(SUM(CASE WHEN event_type='shipping' THEN ship_weight ELSE 0 END), 0)      AS total_ship_weight,
          COALESCE(SUM(deaths), 0)::INT AS total_deaths,
          COALESCE(SUM(culled), 0)::INT AS total_culled,
-         MAX(CASE WHEN event_type='shipping' THEN event_date END)       AS last_ship_date,
-         MAX(CASE WHEN event_type='stock_in' THEN event_date END)       AS last_stock_in_date
+         MAX(CASE WHEN event_type='shipping' THEN event_date END) AS last_ship_date,
+         MAX(CASE WHEN transfer_in > 0        THEN event_date END) AS last_stock_in_date
        FROM livestock_events WHERE batch_id = $1`,
       [batch_id]
     );
@@ -55,8 +55,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
     // ── 기본 계산 ────────────────────────────────────────────
     const stock_in_date          = agg.last_stock_in_date || batch.stock_in_date;
-    const stock_in_count         = Number(agg.event_stock_in_count) || batch.stock_in_count || 0;
-    const initial_stock_weight   = Number(agg.event_stock_weight || manual.initial_stock_weight || 0);
+    const stock_in_count         = (batch.stock_in_count || 0) + Number(agg.total_transfer_in || 0);
+    const initial_stock_weight   = Number(agg.total_stock_weight || 0);
     const avg_stock_weight       = stock_in_count > 0 ? initial_stock_weight / stock_in_count : 0;
 
     const total_shipped          = Number(agg.total_shipped);
