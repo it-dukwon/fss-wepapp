@@ -246,6 +246,7 @@ async function loadEvents() {
         count = "-"; weight = "-"; extra = "";
       }
 
+      const ed = encodeURIComponent(JSON.stringify(e));
       return `<tr>
         <td>${fmtDate(e.event_date)}</td>
         <td style="font-weight:700;">${e.badge_name}</td>
@@ -254,7 +255,10 @@ async function loadEvents() {
         <td>${weight}</td>
         <td style="font-size:0.85rem;color:#555;">${extra}</td>
         <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${e.note || ""}</td>
-        <td><button class="ls-btn ls-btn-red" style="padding:3px 8px;" onclick="deleteEvent(${e.event_id})">삭제</button></td>
+        <td style="white-space:nowrap;">
+          <button class="ls-btn ls-btn-teal" style="padding:3px 8px;margin-right:4px;" onclick="editEvent(${e.event_id}, decodeURIComponent('${ed}'))"><i class="fa-solid fa-pen"></i></button>
+          <button class="ls-btn ls-btn-red"  style="padding:3px 8px;" onclick="deleteEvent(${e.event_id})">삭제</button>
+        </td>
       </tr>`;
     }).join("");
     window.initTableSort?.();
@@ -273,6 +277,122 @@ async function deleteEvent(id) {
   try {
     await apiFetch(`/events/${id}`, { method: "DELETE" });
     toast("success", "삭제되었습니다");
+    loadEvents();
+  } catch (err) {
+    Swal.fire({ icon: "error", title: err.message });
+  }
+}
+
+async function editEvent(id, jsonStr) {
+  const e = JSON.parse(jsonStr);
+  const etype = e.event_type || (e.transfer_in > 0 ? "stock_in" : e.shipped > 0 ? "shipping" : "death");
+
+  let htmlBody = `
+    <div style="text-align:left;display:grid;gap:8px;">
+      <div>
+        <label style="font-size:0.82rem;color:#555;">날짜</label>
+        <input id="ed-date" type="date" class="swal2-input" style="margin:0;width:100%;" value="${e.event_date ? String(e.event_date).slice(0,10) : ''}">
+      </div>`;
+
+  if (etype === "stock_in") {
+    htmlBody += `
+      <div>
+        <label style="font-size:0.82rem;color:#555;">입식두수</label>
+        <input id="ed-transfer-in" type="number" class="swal2-input" style="margin:0;width:100%;" value="${e.transfer_in || ''}">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;">입식 총체중 (kg)</label>
+        <input id="ed-stock-weight" type="number" step="0.1" class="swal2-input" style="margin:0;width:100%;" value="${e.stock_weight || ''}">
+      </div>`;
+  } else if (etype === "death") {
+    const dType = e.death_type || (e.culled > 0 ? "도태" : "폐사");
+    const cnt   = e.deaths > 0 ? e.deaths : (e.culled || 0);
+    htmlBody += `
+      <div>
+        <label style="font-size:0.82rem;color:#555;">유형</label>
+        <select id="ed-death-type" class="swal2-select" style="margin:0;width:100%;padding:6px 8px;border:1px solid #d9d9d9;border-radius:4px;">
+          <option value="폐사"    ${dType==="폐사"    ? "selected":""}>폐사</option>
+          <option value="도태"    ${dType==="도태"    ? "selected":""}>도태</option>
+          <option value="확인불가" ${dType==="확인불가"? "selected":""}>확인불가</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;">두수</label>
+        <input id="ed-death-count" type="number" class="swal2-input" style="margin:0;width:100%;" value="${cnt}">
+      </div>`;
+  } else if (etype === "shipping") {
+    htmlBody += `
+      <div>
+        <label style="font-size:0.82rem;color:#555;">출하두수</label>
+        <input id="ed-shipped" type="number" class="swal2-input" style="margin:0;width:100%;" value="${e.shipped || ''}">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;">출하 총체중 (kg)</label>
+        <input id="ed-ship-weight" type="number" step="0.1" class="swal2-input" style="margin:0;width:100%;" value="${e.ship_weight || ''}">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;">유통업체</label>
+        <input id="ed-distributor" type="text" class="swal2-input" style="margin:0;width:100%;" value="${e.distributor || ''}">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;">도축장</label>
+        <input id="ed-slaughterhouse" type="text" class="swal2-input" style="margin:0;width:100%;" value="${e.slaughterhouse || ''}">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;">육가공업체</label>
+        <input id="ed-meat-processor" type="text" class="swal2-input" style="margin:0;width:100%;" value="${e.meat_processor || ''}">
+      </div>`;
+  }
+
+  htmlBody += `
+      <div>
+        <label style="font-size:0.82rem;color:#555;">메모</label>
+        <input id="ed-note" type="text" class="swal2-input" style="margin:0;width:100%;" value="${e.note || ''}">
+      </div>
+    </div>`;
+
+  const { isConfirmed } = await Swal.fire({
+    title: "이벤트 수정",
+    html: htmlBody,
+    showCancelButton: true,
+    confirmButtonText: "저장",
+    cancelButtonText: "취소",
+    confirmButtonColor: "#146C43",
+    preConfirm: () => true,
+  });
+  if (!isConfirmed) return;
+
+  const body = {
+    event_date: document.getElementById("ed-date").value,
+    event_type: etype,
+    note: document.getElementById("ed-note").value.trim() || null,
+  };
+
+  if (etype === "stock_in") {
+    const ti = parseInt(document.getElementById("ed-transfer-in").value);
+    if (!ti || ti < 1) { Swal.fire({ icon: "warning", title: "입식두수를 입력하세요" }); return; }
+    body.transfer_in  = ti;
+    body.stock_weight = parseFloat(document.getElementById("ed-stock-weight").value) || null;
+  } else if (etype === "death") {
+    const cnt = parseInt(document.getElementById("ed-death-count").value);
+    if (!cnt || cnt < 1) { Swal.fire({ icon: "warning", title: "두수를 입력하세요" }); return; }
+    const dType = document.getElementById("ed-death-type").value;
+    body.death_type = dType;
+    body.deaths = dType === "폐사" || dType === "확인불가" ? cnt : 0;
+    body.culled = dType === "도태" ? cnt : 0;
+  } else if (etype === "shipping") {
+    const sh = parseInt(document.getElementById("ed-shipped").value);
+    if (!sh || sh < 1) { Swal.fire({ icon: "warning", title: "출하두수를 입력하세요" }); return; }
+    body.shipped        = sh;
+    body.ship_weight    = parseFloat(document.getElementById("ed-ship-weight").value) || null;
+    body.distributor    = document.getElementById("ed-distributor").value.trim() || null;
+    body.slaughterhouse = document.getElementById("ed-slaughterhouse").value.trim() || null;
+    body.meat_processor = document.getElementById("ed-meat-processor").value.trim() || null;
+  }
+
+  try {
+    await apiFetch(`/events/${id}`, { method: "PUT", body: JSON.stringify(body) });
+    toast("success", "수정되었습니다");
     loadEvents();
   } catch (err) {
     Swal.fire({ icon: "error", title: err.message });
