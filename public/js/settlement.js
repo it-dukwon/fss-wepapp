@@ -263,6 +263,17 @@ function renderHistory(d) {
         <td>${fmt(running)}</td>
         <td>${outlets || ev.note || ""}</td>
       </tr>`);
+    } else if (etype === "deduction" || (!etype && ev.deducted > 0)) {
+      running -= (ev.deducted || 0);
+      rows.push(`<tr style="background:#f5f0fb;">
+        <td>${fmtDate(ev.event_date)}</td>
+        <td><span class="ev-badge" style="background:#e9e3f5;color:#7b5ea7;">공제</span></td>
+        <td>-</td><td>-</td><td>-</td>
+        <td>${fmt(ev.deducted)}</td>
+        <td>-</td><td>-</td><td>-</td>
+        <td>${fmt(running)}</td>
+        <td>${ev.note || ""}</td>
+      </tr>`);
     }
   }
 
@@ -277,7 +288,7 @@ function renderHistory(d) {
     <td>${fmt(d.stock_in_count)}</td>
     <td>${fmt(d.initial_stock_weight, 1)}</td>
     <td>${fmt(d.avg_stock_weight, 2)}</td>
-    <td>${fmt(d.total_dead)}</td>
+    <td>${fmt((d.total_dead || 0) + (d.total_deducted || 0))}</td>
     <td>${fmt(d.total_shipped)}</td>
     <td>${fmt(d.total_ship_weight, 1)}</td>
     <td>${fmt(d.avg_ship_weight, 2)}</td>

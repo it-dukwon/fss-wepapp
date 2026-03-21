@@ -32,8 +32,9 @@ module.exports = function settlementRoutes({ runPgQuery }) {
          COALESCE(SUM(stock_weight), 0)       AS total_stock_weight,
          COALESCE(SUM(CASE WHEN event_type='shipping' THEN shipped     ELSE 0 END), 0)::INT AS total_shipped,
          COALESCE(SUM(CASE WHEN event_type='shipping' THEN ship_weight ELSE 0 END), 0)      AS total_ship_weight,
-         COALESCE(SUM(deaths), 0)::INT AS total_deaths,
-         COALESCE(SUM(culled), 0)::INT AS total_culled,
+         COALESCE(SUM(deaths),   0)::INT AS total_deaths,
+         COALESCE(SUM(culled),   0)::INT AS total_culled,
+         COALESCE(SUM(deducted), 0)::INT AS total_deducted,
          MAX(CASE WHEN event_type='shipping' THEN event_date END) AS last_ship_date,
          MAX(CASE WHEN transfer_in > 0        THEN event_date END) AS last_stock_in_date
        FROM livestock_events WHERE batch_id = $1`,
@@ -49,7 +50,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
     const evRes = await runPgQuery(
       `SELECT event_date, event_type, transfer_in, stock_weight,
-              deaths, culled, death_type,
+              deaths, culled, death_type, deducted,
               shipped, ship_weight, distributor, slaughterhouse, meat_processor, note
        FROM livestock_events
        WHERE batch_id = $1
@@ -80,6 +81,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
     // ── 도폐사 ──────────────────────────────────────────────
     const total_deaths   = Number(agg.total_deaths);
     const total_culled   = Number(agg.total_culled);
+    const total_deducted = Number(agg.total_deducted || 0);
     const total_dead     = total_deaths + total_culled;
     const claim_count    = Number(manual.claim_count ?? 0);
     const adj_dead       = total_dead - claim_count;
@@ -116,14 +118,14 @@ module.exports = function settlementRoutes({ runPgQuery }) {
     const farm_net   = revenue - piglet_cost - feed_cost - net_payment;
 
     // ── 현재 잔여두수 (사육두수 현황과 동일 로직) ───────────────────
-    const remaining = stock_in_count - total_dead - total_shipped;
+    const remaining = stock_in_count - total_dead - total_shipped - total_deducted;
 
     return {
       batch, manual, events,
       stock_in_count, stock_in_date, initial_stock_weight, avg_stock_weight,
       total_shipped, total_ship_weight, avg_ship_weight, last_ship_date,
       breeding_days, total_weight_gain, daily_gain_g, daily_gain_per,
-      total_deaths, total_culled, total_dead,
+      total_deaths, total_culled, total_deducted, total_dead,
       claim_count, adj_dead, mortality_act, std_rate, std_head, deduct_head, settlement_count,
       feed_piglet, feed_grow, feed_total, feed_cost,
       feed_fcr, feed_daily, feed_per_head, feed_avg_cost, feed_cost_per_kg,
