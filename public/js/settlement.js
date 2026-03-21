@@ -350,7 +350,7 @@ async function downloadExcel() {
 
   // 잔여두수 확인
   const remEl = document.getElementById("v-remaining");
-  const remaining = parseInt(remEl?.textContent) || 0;
+  const remaining = parseInt((remEl?.textContent || "").replace(/[^0-9]/g, "")) || 0;
 
   if (remaining > 0) {
     const { isConfirmed } = await Swal.fire({
