@@ -237,7 +237,7 @@ async function loadPassSelect(batch_id) {
   try {
     const { passes } = await apiFetch(`/passes/for-batch/${batch_id}`);
     if (!passes.length) {
-      el.innerHTML = `<option value="">파스 없음 (현황 탭에서 먼저 생성하세요)</option>`;
+      el.innerHTML = `<option value="">파스 없음</option>`;
       return;
     }
     el.innerHTML = passes.map((p) => {
@@ -745,10 +745,6 @@ window.addEventListener("DOMContentLoaded", () => {
   const today = new Date().toISOString().slice(0, 10);
   document.getElementById("ev-date").value = today;
 
-  // 기본 필터: 최근 30일
-  const d30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  document.getElementById("ev-filter-from").value = d30;
-  document.getElementById("ev-filter-to").value   = today;
 
   loadStatus();
 });
