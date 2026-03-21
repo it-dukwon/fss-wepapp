@@ -35,7 +35,7 @@ function buildMortalityReportHtml(report, generatedAt) {
     const mortality = parseFloat(r.mortality_pct) || 0;
     const benchmark = parseFloat(r.benchmark_pct) || 0;
     const diff = parseFloat(r.diff_pct) || 0;
-    const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%";
+    const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%p";
     let statusColor, statusLabel;
     if (mortality <= benchmark)             { statusColor = "#146C43"; statusLabel = "✅ 양호"; }
     else if (mortality <= benchmark * 1.5)  { statusColor = "#e07800"; statusLabel = "⚠️ 주의"; }

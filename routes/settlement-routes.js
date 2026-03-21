@@ -218,7 +218,20 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.readFile(path.join(__dirname, "../templates/settlement_template.xlsx"));
+
+      // 첫 번째 시트만 남기고 나머지 제거
+      wb.worksheets.slice(1).forEach(s => wb.removeWorksheet(s.id));
+
       const ws = wb.worksheets[0];
+
+      // L열(0-based index 11) 밖의 이미지 제거
+      if (ws._media) {
+        ws._media = ws._media.filter(img => {
+          const col = img.range?.tl?.col;
+          return col == null || col < 12;
+        });
+      }
+
       const asDate = (v) => v ? new Date(v) : null;
 
       ws.getCell("B2").value = `위 탁 사 육 정 산 서 (${batch.badge_name})`;
@@ -268,7 +281,6 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       ws.getCell("G20").value = penalty_grade;
       ws.getCell("H20").value = prepayment;
       ws.getCell("J20").value = net_payment;
-      ws.getCell("N20").value = manual.payment_note || "";
       ws.getCell("B23").value = revenue;
       ws.getCell("D23").value = piglet_cost;
       ws.getCell("F23").value = feed_cost;

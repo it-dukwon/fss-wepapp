@@ -422,7 +422,7 @@ async function loadMortality() {
       else                               { statusClass = "status-bad";  statusLabel = "🔴 불량"; }
 
       const diff = parseFloat(r.diff_pct) || 0;
-      const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%";
+      const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%p";
       return `<tr>
         <td style="font-weight:700;">${r.badge_name}</td>
         <td>${r.manager || "-"}</td>
