@@ -144,6 +144,27 @@ module.exports = function livestockRoutes({ runPgQuery }) {
     }
   });
 
+  // 뱃지 삭제
+  // DELETE /api/livestock/batches/:id
+  router.delete("/batches/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+      // 관련 이벤트·파스 먼저 삭제
+      await runPgQuery(`DELETE FROM livestock_events WHERE batch_id = $1`, [id]);
+      await runPgQuery(`DELETE FROM livestock_passes  WHERE batch_id = $1`, [id]);
+      await runPgQuery(`DELETE FROM consignment_settlements WHERE batch_id = $1`, [id]);
+      await runPgQuery(`DELETE FROM livestock_batches WHERE batch_id = $1`, [id]);
+
+      auditLog(req, "DELETE", "livestock_batch", id, `뱃지 삭제: id=${id}`);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Delete batch error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // 뱃지 상태 변경 (active ↔ completed)
   // PATCH /api/livestock/batches/:id/status
   router.patch("/batches/:id/status", async (req, res) => {

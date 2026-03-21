@@ -676,7 +676,8 @@ async function loadBadges() {
           <td><span class="badge-active">활성</span></td>
           <td style="white-space:nowrap;">
             <button class="ls-btn ls-btn-teal" style="margin-right:4px;" onclick="editBadge(${b.batch_id})"><i class="fa-solid fa-pen"></i></button>
-            <button class="ls-btn ls-btn-gray" onclick="setBadgeStatus(${b.batch_id},'completed')">완료처리</button>
+            <button class="ls-btn ls-btn-gray" style="margin-right:4px;" onclick="setBadgeStatus(${b.batch_id},'completed')">완료처리</button>
+            <button class="ls-btn ls-btn-red" onclick="deleteBadge(${b.batch_id},'${b.badge_name.replace(/'/g,"\\'")}')">삭제</button>
           </td>
         </tr>`).join('')
       : '<tr><td colspan="8" class="ls-empty">없음</td></tr>';
@@ -689,9 +690,12 @@ async function loadBadges() {
           <td>${b.manager || '-'}</td>
           <td>${fmtDate2(b.last_transfer_date)}</td>
           <td><span class="badge-done">완료</span></td>
-          <td><button class="ls-btn ls-btn-teal" onclick="setBadgeStatus(${b.batch_id},'active')">복원</button></td>
+          <td style="white-space:nowrap;">
+            <button class="ls-btn ls-btn-teal" style="margin-right:4px;" onclick="setBadgeStatus(${b.batch_id},'active')">복원</button>
+            <button class="ls-btn ls-btn-red" onclick="deleteBadge(${b.batch_id},'${b.badge_name.replace(/'/g,"\\'")}')">삭제</button>
+          </td>
         </tr>`).join('')
-      : '<tr><td colspan="7" class="ls-empty">없음</td></tr>';
+      : '<tr><td colspan="8" class="ls-empty">없음</td></tr>';
 
     window.initTableSort?.();
   } catch (err) {
@@ -782,6 +786,29 @@ async function editBadge(batch_id) {
     Swal.fire({ icon: 'success', title: '수정 완료', timer: 1200, showConfirmButton: false });
   } catch (err) {
     Swal.fire({ icon: 'error', title: '수정 실패', text: err.message });
+  }
+}
+
+async function deleteBadge(id, badge_name) {
+  const { isConfirmed } = await Swal.fire({
+    icon: 'warning',
+    title: '뱃지 삭제',
+    html: `<p>"<b>${badge_name}</b>" 뱃지와 관련된 모든 이벤트·파스·정산 데이터가 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.</p>`,
+    showCancelButton: true,
+    confirmButtonText: '삭제',
+    cancelButtonText: '취소',
+    confirmButtonColor: '#d9534f',
+  });
+  if (!isConfirmed) return;
+  try {
+    const r = await fetch(`${BATCH_API}/batches/${id}`, {
+      method: 'DELETE', credentials: 'include',
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadBadges();
+    Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: '삭제 실패', text: err.message });
   }
 }
 
