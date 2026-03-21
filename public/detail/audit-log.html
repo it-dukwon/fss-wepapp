@@ -66,9 +66,9 @@
 
   <div class="ls-card">
     <!-- 필터 -->
-    <div class="ls-filter-row" style="margin-bottom:16px;flex-wrap:wrap;align-items:flex-end;gap:10px;">
-      <label>작업 유형
-        <select id="filterAction" style="margin-top:3px;">
+    <div class="ls-filter-row" style="margin-bottom:16px;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;">
+      <label style="display:flex;flex-direction:column;gap:3px;min-width:130px;">작업 유형
+        <select id="filterAction">
           <option value="">전체</option>
           <option value="INSERT">등록</option>
           <option value="UPDATE">수정</option>
@@ -80,8 +80,8 @@
           <option value="VIEW">페이지 진입</option>
         </select>
       </label>
-      <label>리소스
-        <select id="filterResource" style="margin-top:3px;">
+      <label style="display:flex;flex-direction:column;gap:3px;min-width:130px;">리소스
+        <select id="filterResource">
           <option value="">전체</option>
           <option value="farm">농장</option>
           <option value="feed_company">사료회사</option>
@@ -92,19 +92,19 @@
           <option value="db_server">DB 서버</option>
         </select>
       </label>
-      <label>사용자 (UPN)
-        <input type="text" id="filterUser" placeholder="이메일 일부 입력" style="margin-top:3px;" />
+      <label style="display:flex;flex-direction:column;gap:3px;min-width:160px;">사용자 (UPN)
+        <input type="text" id="filterUser" placeholder="이메일 일부 입력" />
       </label>
-      <label>요약 검색
-        <input type="text" id="filterSummary" placeholder="요약 내용 검색" style="margin-top:3px;" />
+      <label style="display:flex;flex-direction:column;gap:3px;min-width:160px;">요약 검색
+        <input type="text" id="filterSummary" placeholder="요약 내용 검색" />
       </label>
-      <label>시작일
-        <input type="date" id="filterDateFrom" style="margin-top:3px;" />
+      <label style="display:flex;flex-direction:column;gap:3px;">시작일
+        <input type="date" id="filterDateFrom" />
       </label>
-      <label>종료일
-        <input type="date" id="filterDateTo" style="margin-top:3px;" />
+      <label style="display:flex;flex-direction:column;gap:3px;">종료일
+        <input type="date" id="filterDateTo" />
       </label>
-      <div style="display:flex;gap:6px;align-items:center;">
+      <div style="display:flex;gap:6px;align-items:flex-end;">
         <button class="ls-btn ls-btn-primary" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
         <button class="ls-btn ls-btn-gray" id="btnReset"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
       </div>
