@@ -1,5 +1,7 @@
 // settlement.js
 
+let _ownerEmail = "";  // 현재 선택된 뱃지의 농장주 이메일
+
 const API = window.location.hostname.includes("localhost")
   ? "http://localhost:3000/api/settlement"
   : "https://webapp-databricks-dashboard-c7a3fjgmb7d3dnhn.koreacentral-01.azurewebsites.net/api/settlement";
@@ -54,6 +56,8 @@ async function loadSettlement() {
   try {
     const { data: d } = await apiFetch(`/${batch_id}`);
     document.getElementById("st-body").style.display = "";
+
+    _ownerEmail = d.batch.owner_email || "";
 
     // ── ① 기본 정보 ────────────────────────────────
     document.getElementById("v-farm-name").textContent        = d.batch.farm_name || d.batch.manager || "-";
@@ -342,6 +346,48 @@ async function downloadExcel() {
   }
 
   window.location.href = API + `/${batch_id}/excel`;
+}
+
+// ─── 이메일 발송 ─────────────────────────────────────────────
+async function sendSettlementEmail() {
+  const batch_id = document.getElementById("batch-select").value;
+  if (!batch_id) return Swal.fire({ icon: "warning", title: "뱃지를 선택하세요." });
+
+  const { value: formValues, isConfirmed } = await Swal.fire({
+    title: "위탁정산서 이메일 발송",
+    html: `
+      <div style="text-align:left;font-size:0.9rem;">
+        <label style="display:block;margin-bottom:4px;font-weight:600;">수신자 (농장주) *</label>
+        <input id="swal-to" class="swal2-input" style="margin:0 0 12px;width:100%;box-sizing:border-box;"
+          placeholder="farm@example.com" value="${_ownerEmail}" />
+        <label style="display:block;margin-bottom:4px;font-weight:600;">참조 (선택)</label>
+        <input id="swal-cc" class="swal2-input" style="margin:0;width:100%;box-sizing:border-box;"
+          placeholder="cc@example.com" />
+      </div>`,
+    showCancelButton: true,
+    confirmButtonText: "발송",
+    cancelButtonText: "취소",
+    confirmButtonColor: "#5b4da8",
+    preConfirm: () => ({
+      to: document.getElementById("swal-to").value.trim(),
+      cc: document.getElementById("swal-cc").value.trim(),
+    }),
+  });
+
+  if (!isConfirmed || !formValues) return;
+  const { to, cc } = formValues;
+  if (!to) return Swal.fire({ icon: "warning", title: "수신자 이메일을 입력하세요." });
+
+  try {
+    Swal.fire({ title: "발송 중...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    await apiFetch(`/${batch_id}/send-email`, {
+      method: "POST",
+      body: JSON.stringify({ to, cc: cc || undefined }),
+    });
+    Swal.fire({ icon: "success", title: "발송 완료", text: `${to} 으로 발송되었습니다.` });
+  } catch (err) {
+    Swal.fire({ icon: "error", title: "발송 실패", text: err.message });
+  }
 }
 
 // ─── 초기화 ──────────────────────────────────────────────────

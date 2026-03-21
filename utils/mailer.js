@@ -16,12 +16,14 @@ const transporter = nodemailer.createTransport({
  * @param {string}          opts.subject
  * @param {string}          opts.html
  */
-async function sendMail({ to, subject, html }) {
+async function sendMail({ to, cc, subject, html, attachments }) {
   return transporter.sendMail({
     from: `"덕원농장 관리시스템" <${process.env.GMAIL_USER}>`,
-    to: Array.isArray(to) ? to.join(", ") : to,
+    to:   Array.isArray(to) ? to.join(", ") : to,
+    cc:   cc ? (Array.isArray(cc) ? cc.join(", ") : cc) : undefined,
     subject,
     html,
+    attachments,
   });
 }
 

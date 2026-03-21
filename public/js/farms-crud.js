@@ -92,7 +92,7 @@ function filterManagerSelect() {
 async function loadFarms() {
   const tbody = get('farm-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" class="ls-empty">로딩 중...</td></tr>';
 
   try {
     const r = await fetch(FARM_API, { credentials: 'include' });
@@ -107,7 +107,7 @@ async function loadFarms() {
     farms.forEach(f => appendFarmRow(f, tbody));
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="11" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="ls-empty" style="color:#d9534f;">${err.message}</td></tr>`;
   }
 }
 
@@ -122,6 +122,7 @@ function appendFarmRow(f, tbody) {
     { val: f.농장명,      key: '농장명' },
     { val: f.지역,        key: '지역' },
     { val: f.농장주,      key: '농장주' },
+    { val: f.owner_email, key: 'owner_email',   type: 'email' },
     { val: f.사료회사,    key: '사료회사',       readonly: true, fkId: f.feed_company_id, fkKey: 'feed_company_id' },
     { val: f.관리자,      key: '관리자',         readonly: true, fkId: f.manager_id, fkKey: 'manager_id' },
     { val: f.계약상태,    key: '계약상태' },
@@ -257,6 +258,7 @@ async function addFarm() {
     농장명,
     지역:            get('fn-region')?.value.trim() || null,
     농장주:          get('fn-owner')?.value.trim()  || null,
+    owner_email:     get('fn-email')?.value.trim()  || null,
     feed_company_id: get('fn-company')?.value       || null,
     manager_id:      get('fn-manager')?.value       || null,
     계약상태:        get('fn-status')?.value.trim() || null,
@@ -271,7 +273,7 @@ async function addFarm() {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    ['fn-name','fn-region','fn-owner','fn-status','fn-start','fn-end'].forEach(id => { if (get(id)) get(id).value = ''; });
+    ['fn-name','fn-region','fn-owner','fn-email','fn-status','fn-start','fn-end'].forEach(id => { if (get(id)) get(id).value = ''; });
     get('fn-company').value = '';
     get('fn-manager').value = '';
     await loadFarms();

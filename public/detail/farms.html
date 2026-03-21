@@ -43,6 +43,10 @@
           <input type="text" id="fn-owner" />
         </div>
         <div class="ls-form-group">
+          <label>농장주 이메일</label>
+          <input type="email" id="fn-email" placeholder="정산서 발송용" />
+        </div>
+        <div class="ls-form-group">
           <label>사료회사</label>
           <select id="fn-company"></select>
         </div>
@@ -74,13 +78,13 @@
         <table class="ls-table">
           <thead>
             <tr>
-              <th>ID</th><th>농장명</th><th>지역</th><th>농장주</th>
+              <th>ID</th><th>농장명</th><th>지역</th><th>농장주</th><th>이메일</th>
               <th>사료회사</th><th>관리자</th><th>계약상태</th>
               <th>계약시작일</th><th>계약종료일</th><th>수정</th><th>삭제</th>
             </tr>
           </thead>
           <tbody id="farm-tbody">
-            <tr><td colspan="11" class="ls-empty">로딩 중...</td></tr>
+            <tr><td colspan="12" class="ls-empty">로딩 중...</td></tr>
           </tbody>
         </table>
       </div>

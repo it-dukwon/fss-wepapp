@@ -3,6 +3,7 @@ const express = require("express");
 const path    = require("path");
 const ExcelJS = require("exceljs");
 const { auditLog } = require("../utils/audit-log");
+const { sendMail }  = require("../utils/mailer");
 
 module.exports = function settlementRoutes({ runPgQuery }) {
   const router = express.Router();
@@ -41,7 +42,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
   // ─── 공통 계산 헬퍼 ──────────────────────────────────────────
   async function getSettlementData(batch_id) {
     const batchRes = await runPgQuery(
-      `SELECT b.*, f."농장명" AS farm_name, f."지역" AS region
+      `SELECT b.*, f."농장명" AS farm_name, f."지역" AS region, f.owner_email
        FROM livestock_batches b
        LEFT JOIN list_farms f ON f."농장ID" = b.farm_id
        WHERE b.batch_id = $1`,
@@ -228,13 +229,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
     }
   });
 
-  // ─── GET /api/settlement/:batch_id/excel ────────────────────
-  router.get("/:batch_id/excel", async (req, res) => {
-    try {
-      const batch_id = parseInt(req.params.batch_id, 10);
-      const d = await getSettlementData(batch_id);
-      if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
-
+  // ─── Excel 워크북 생성 (공유 헬퍼) ──────────────────────────
+  async function buildExcelBuffer(d) {
       const {
         batch, manual, events,
         stock_in_count, stock_in_date, initial_stock_weight, avg_stock_weight,
@@ -251,56 +247,39 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.readFile(path.join(__dirname, "../templates/settlement_template.xlsx"));
       const ws = wb.getWorksheet(1);
-
       const asDate = (v) => v ? new Date(v) : null;
 
-      // ── 제목 ─────────────────────────────────────
       ws.getCell("B2").value = `위 탁 사 육 정 산 서 (${batch.badge_name})`;
-
-      // ── 위탁장명 / 계좌 ──────────────────────────
       ws.getCell("I4").value = batch.farm_name || batch.manager || "";
       ws.getCell("I5").value = manual.farm_account || "";
-
-      // ── 입식 ─────────────────────────────────────
       ws.getCell("D6").value = asDate(stock_in_date);
       ws.getCell("F6").value = stock_in_count;
       ws.getCell("I6").value = initial_stock_weight;
       ws.getCell("K6").value = avg_stock_weight;
-
-      // ── 출하 ─────────────────────────────────────
       ws.getCell("D7").value = asDate(last_ship_date);
       ws.getCell("F7").value = total_shipped;
       ws.getCell("I7").value = total_ship_weight;
       ws.getCell("K7").value = avg_ship_weight;
-
-      // ── 사육기간 / 증체 ───────────────────────────
       ws.getCell("D8").value = breeding_days;
       ws.getCell("F8").value = total_weight_gain;
       ws.getCell("I8").value = daily_gain_g;
       ws.getCell("K8").value = daily_gain_per;
-
-      // ── 도폐사 실적 ───────────────────────────────
       ws.getCell("C10").value = stock_in_count;
       ws.getCell("E10").value = claim_count;
       ws.getCell("G10").value = total_dead;
       ws.getCell("I10").value = adj_dead;
       ws.getCell("K10").value = mortality_act;
-
       ws.getCell("C11").value = settlement_count;
       ws.getCell("E11").value = std_rate;
       ws.getCell("G11").value = std_head;
       ws.getCell("I11").value = mortality_act;
       ws.getCell("K11").value = deduct_head;
-
-      // ── 출하 실적 등급 ────────────────────────────
-      ws.getCell("C13").value = manual.grade_1plus   || 0;
-      ws.getCell("E13").value = manual.grade_1        || 0;
-      ws.getCell("G13").value = manual.grade_2        || 0;
-      ws.getCell("I13").value = manual.grade_out_spec || 0;
+      ws.getCell("C13").value = manual.grade_1plus    || 0;
+      ws.getCell("E13").value = manual.grade_1         || 0;
+      ws.getCell("G13").value = manual.grade_2         || 0;
+      ws.getCell("I13").value = manual.grade_out_spec  || 0;
       ws.getCell("K13").value = manual.grade_out_other || 0;
       ws.getCell("J14").value = grade_penalty;
-
-      // ── 사료 ─────────────────────────────────────
       ws.getCell("C16").value = feed_piglet;
       ws.getCell("E16").value = feed_grow;
       ws.getCell("G16").value = feed_total;
@@ -309,8 +288,6 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       ws.getCell("E17").value = feed_per_head;
       ws.getCell("G17").value = feed_cost;
       ws.getCell("I17").value = feed_avg_cost;
-
-      // ── 위탁사육비 ────────────────────────────────
       ws.getCell("B20").value = base_fee;
       ws.getCell("D20").value = incentive_growth;
       ws.getCell("F20").value = incentive_feed;
@@ -318,26 +295,20 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       ws.getCell("H20").value = prepayment;
       ws.getCell("J20").value = net_payment;
       ws.getCell("N20").value = manual.payment_note || "";
-
-      // ── 농장 수익 분석 ────────────────────────────
       ws.getCell("B23").value = revenue;
       ws.getCell("D23").value = piglet_cost;
       ws.getCell("F23").value = feed_cost;
       ws.getCell("H23").value = net_payment;
       ws.getCell("J23").value = farm_net;
 
-      // ── 이력 테이블 클리어 (27~46) ────────────────
       for (let r = 27; r <= 46; r++) {
         ["B","C","D","E","F","G","H","I","J","K"].forEach((col) => {
           ws.getCell(`${col}${r}`).value = null;
         });
       }
 
-      // ── 이력 테이블 채우기 ────────────────────────
       let row = 27;
       let running = stock_in_count;
-
-      // 입식 초기 행
       if (row <= 46) {
         ws.getCell(`B${row}`).value = asDate(stock_in_date);
         ws.getCell(`C${row}`).value = stock_in_count;
@@ -346,7 +317,6 @@ module.exports = function settlementRoutes({ runPgQuery }) {
         ws.getCell(`J${row}`).value = running;
         row++;
       }
-
       for (const ev of events) {
         if (row > 46) break;
         if (ev.event_type === "death") {
@@ -361,17 +331,13 @@ module.exports = function settlementRoutes({ runPgQuery }) {
           ws.getCell(`B${row}`).value = asDate(ev.event_date);
           ws.getCell(`G${row}`).value = ev.shipped;
           ws.getCell(`H${row}`).value = ev.ship_weight;
-          ws.getCell(`I${row}`).value = ev.ship_weight && ev.shipped
-            ? ev.ship_weight / ev.shipped : null;
+          ws.getCell(`I${row}`).value = ev.ship_weight && ev.shipped ? ev.ship_weight / ev.shipped : null;
           ws.getCell(`J${row}`).value = running;
-          const outlets = [ev.distributor, ev.slaughterhouse, ev.meat_processor]
-            .filter(Boolean).join(",");
+          const outlets = [ev.distributor, ev.slaughterhouse, ev.meat_processor].filter(Boolean).join(",");
           ws.getCell(`K${row}`).value = outlets || null;
           row++;
         }
       }
-
-      // ── 합계 행 (row 47) ──────────────────────────
       ws.getCell("B47").value = "합계";
       ws.getCell("C47").value = stock_in_count;
       ws.getCell("D47").value = initial_stock_weight || null;
@@ -382,16 +348,137 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       ws.getCell("I47").value = avg_ship_weight || null;
       ws.getCell("J47").value = running;
 
-      const filename = `${batch.badge_name}_위탁정산서.xlsx`;
-      res.setHeader("Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition",
-        `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      return wb.xlsx.writeBuffer();
+  }
 
-      await wb.xlsx.write(res);
-      res.end();
+  // ─── GET /api/settlement/:batch_id/excel ────────────────────
+  router.get("/:batch_id/excel", async (req, res) => {
+    try {
+      const batch_id = parseInt(req.params.batch_id, 10);
+      const d = await getSettlementData(batch_id);
+      if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
+      const buffer = await buildExcelBuffer(d);
+      const filename = `${d.batch.badge_name}_위탁정산서.xlsx`;
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.send(buffer);
     } catch (err) {
       console.error("Settlement Excel error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ─── POST /api/settlement/:batch_id/send-email ──────────────
+  router.post("/:batch_id/send-email", async (req, res) => {
+    try {
+      const batch_id = parseInt(req.params.batch_id, 10);
+      const { to, cc } = req.body || {};
+      if (!to) return res.status(400).json({ error: "수신자 이메일(to) 필수" });
+
+      const d = await getSettlementData(batch_id);
+      if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
+
+      const buffer = await buildExcelBuffer(d);
+      const filename = `${d.batch.badge_name}_위탁정산서.xlsx`;
+
+      const {
+        batch,
+        stock_in_count, stock_in_date, avg_stock_weight,
+        total_shipped, total_ship_weight, avg_ship_weight,
+        breeding_days, total_weight_gain, daily_gain_g,
+        total_dead, mortality_act,
+        net_payment, farm_net,
+      } = d;
+
+      const fmt = (v, decimals = 0) =>
+        v != null ? Number(v).toLocaleString("ko-KR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : "-";
+      const fmtDate = (v) => v ? String(v).slice(0, 10).replace(/-/g, ".") : "-";
+
+      const html = `
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8" /></head>
+<body style="font-family:'Malgun Gothic',Arial,sans-serif;background:#f5f7f6;padding:24px;margin:0;">
+  <div style="max-width:680px;margin:0 auto;background:#fff;border-radius:14px;padding:32px;border:1px solid #e0e0e0;">
+    <h2 style="margin:0 0 4px;color:#184B37;">위 탁 사 육 정 산 서</h2>
+    <p style="margin:0 0 24px;color:#888;font-size:13px;">뱃지: <strong>${batch.badge_name}</strong> &nbsp;|&nbsp; 농장: <strong>${batch.farm_name || "-"}</strong></p>
+
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;">
+      <thead>
+        <tr style="background:#f0f4f0;">
+          <th style="padding:8px 10px;border:1px solid #ddd;text-align:center;" colspan="2">입식 정보</th>
+          <th style="padding:8px 10px;border:1px solid #ddd;text-align:center;" colspan="2">출하 정보</th>
+          <th style="padding:8px 10px;border:1px solid #ddd;text-align:center;" colspan="2">사육 성적</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">입식일</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmtDate(stock_in_date)}</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">출하두수</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(total_shipped)}두</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">사육일수</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(breeding_days)}일</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">입식두수</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(stock_in_count)}두</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">출하총체중</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(total_ship_weight, 1)}kg</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">총증체</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(total_weight_gain, 1)}kg</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">입식평균체중</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(avg_stock_weight, 1)}kg</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">평균출하체중</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(avg_ship_weight, 1)}kg</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">일당증체</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;">${fmt(daily_gain_g, 0)}g</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">폐사두수</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;color:#d9534f;">${fmt(total_dead)}두</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">폐사율</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:600;color:#d9534f;">${fmt(mortality_act, 2)}%</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;"></td>
+          <td style="padding:8px 10px;border:1px solid #ddd;"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">
+      <thead>
+        <tr style="background:#f0f4f0;">
+          <th style="padding:8px 10px;border:1px solid #ddd;text-align:center;" colspan="4">정산 내역</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">위탁사육비 (순지급액)</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:700;font-size:15px;color:#184B37;">${fmt(net_payment)}원</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;color:#555;">농장 순수익</td>
+          <td style="padding:8px 10px;border:1px solid #ddd;font-weight:700;font-size:15px;color:#184B37;">${fmt(farm_net)}원</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:12px;color:#aaa;margin:0;">※ 자세한 내용은 첨부 엑셀 파일을 확인해 주세요.</p>
+  </div>
+</body>
+</html>`;
+
+      await sendMail({
+        to,
+        cc: cc || undefined,
+        subject: `[덕원농장] ${batch.badge_name} 위탁사육정산서`,
+        html,
+        attachments: [{ filename, content: buffer }],
+      });
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Settlement send-email error:", err);
       res.status(500).json({ error: err.message });
     }
   });

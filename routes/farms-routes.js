@@ -11,6 +11,10 @@ function parseDateOrNull(dateStr) {
 module.exports = function farmsRoutes({ runPgQuery }) {
   const router = express.Router();
 
+  // owner_email 컬럼 자동 추가 (기존 DB 호환)
+  runPgQuery(`ALTER TABLE list_farms ADD COLUMN IF NOT EXISTS owner_email VARCHAR(200)`)
+    .catch((e) => console.error("farms migration error:", e.message));
+
   // ═══════════════════════════════════════════════════════════
   // 사료회사 (feed_companies)
   // ═══════════════════════════════════════════════════════════
@@ -131,6 +135,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
       const r = await runPgQuery(`
         SELECT
           f."농장ID", f."농장명", f."지역", f."농장주",
+          f.owner_email,
           f."계약상태", f."계약시작일", f."계약종료일",
           f.feed_company_id, fc.company_name AS feed_company_name,
           f.manager_id, m.manager_name
@@ -144,6 +149,7 @@ module.exports = function farmsRoutes({ runPgQuery }) {
         농장명:          row["농장명"] ?? "",
         지역:            row["지역"] ?? "",
         농장주:          row["농장주"] ?? "",
+        owner_email:     row.owner_email ?? "",
         feed_company_id: row.feed_company_id,
         사료회사:        row.feed_company_name ?? "",
         manager_id:      row.manager_id,
@@ -163,10 +169,11 @@ module.exports = function farmsRoutes({ runPgQuery }) {
     try {
       const b = req.body || {};
       await runPgQuery(
-        `INSERT INTO list_farms ("농장명","지역","농장주","계약상태","계약시작일","계약종료일",feed_company_id,manager_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        `INSERT INTO list_farms ("농장명","지역","농장주",owner_email,"계약상태","계약시작일","계약종료일",feed_company_id,manager_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [
           b.농장명 || "", b.지역 || null, b.농장주 || null,
+          b.owner_email || null,
           b.계약상태 || null,
           parseDateOrNull(b.계약시작일), parseDateOrNull(b.계약종료일),
           b.feed_company_id || null, b.manager_id || null,
@@ -187,11 +194,12 @@ module.exports = function farmsRoutes({ runPgQuery }) {
       const b = req.body || {};
       await runPgQuery(
         `UPDATE list_farms
-         SET "농장명"=$1,"지역"=$2,"농장주"=$3,"계약상태"=$4,"계약시작일"=$5,"계약종료일"=$6,
-             feed_company_id=$7, manager_id=$8
-         WHERE "농장ID"=$9`,
+         SET "농장명"=$1,"지역"=$2,"농장주"=$3,owner_email=$4,"계약상태"=$5,"계약시작일"=$6,"계약종료일"=$7,
+             feed_company_id=$8, manager_id=$9
+         WHERE "농장ID"=$10`,
         [
           b.농장명 || "", b.지역 || null, b.농장주 || null,
+          b.owner_email || null,
           b.계약상태 || null,
           parseDateOrNull(b.계약시작일), parseDateOrNull(b.계약종료일),
           b.feed_company_id || null, b.manager_id || null,
