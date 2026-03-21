@@ -211,7 +211,10 @@ function bindCalcListeners(d) {
 function renderHistory(d) {
   const tbody = document.getElementById("history-tbody");
   const rows  = [];
-  let running = d.stock_in_count;
+  // d.stock_in_count = batch.stock_in_count + total_transfer_in
+  // 이벤트 루프에서 transfer_in을 다시 더하므로, 먼저 차감해서 초기값 계산
+  const baseCount = d.events.reduce((s, e) => s - (e.transfer_in || 0), d.stock_in_count);
+  let running = baseCount;
 
   for (const ev of d.events) {
     const etype = ev.event_type;

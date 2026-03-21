@@ -307,14 +307,14 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       }
       for (const ev of events) {
         if (row > 46) break;
-        if (ev.event_type === "death") {
+        if (ev.event_type === "death" || (!ev.event_type && (ev.deaths > 0 || ev.culled > 0))) {
           const cnt = (ev.deaths || 0) + (ev.culled || 0);
           running -= cnt;
           ws.getCell(`B${row}`).value = asDate(ev.event_date);
           ws.getCell(`F${row}`).value = cnt;
           ws.getCell(`J${row}`).value = running;
           row++;
-        } else if (ev.event_type === "shipping") {
+        } else if (ev.event_type === "shipping" || (!ev.event_type && ev.shipped > 0)) {
           running -= (ev.shipped || 0);
           ws.getCell(`B${row}`).value = asDate(ev.event_date);
           ws.getCell(`G${row}`).value = ev.shipped;
