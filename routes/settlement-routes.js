@@ -392,7 +392,7 @@ module.exports = function settlementRoutes({ runPgQuery }) {
 
       const fmt = (v, decimals = 0) =>
         v != null ? Number(v).toLocaleString("ko-KR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : "-";
-      const fmtDate = (v) => v ? String(v).slice(0, 10).replace(/-/g, ".") : "-";
+      const fmtDate = (v) => v ? String(v).slice(0, 10) : "-";
 
       const html = `
 <!DOCTYPE html>
