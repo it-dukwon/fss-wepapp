@@ -557,6 +557,7 @@ module.exports = function livestockRoutes({ runPgQuery }) {
           b.batch_id,
           b.badge_name,
           b.manager,
+          p.pass_name,
           COALESCE(MAX(CASE WHEN e.transfer_in > 0 THEN e.event_date END), b.stock_in_date) AS stock_in_date,
           (b.stock_in_count + COALESCE(SUM(e.transfer_in), 0))::INT                  AS stock_in_count,
           b.status,
@@ -573,8 +574,9 @@ module.exports = function livestockRoutes({ runPgQuery }) {
           )                                                                            AS months_elapsed
         FROM livestock_batches b
         LEFT JOIN livestock_events e ON e.batch_id = b.batch_id
+        LEFT JOIN livestock_passes p ON p.batch_id = b.batch_id AND p.status = 'active'
         WHERE b.status = 'active'
-        GROUP BY b.batch_id
+        GROUP BY b.batch_id, p.pass_name
         ORDER BY mortality_pct DESC NULLS LAST
       `);
 

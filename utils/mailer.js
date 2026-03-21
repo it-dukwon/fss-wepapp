@@ -44,8 +44,9 @@ function buildMortalityReportHtml(report, generatedAt) {
     return `
       <tr>
         <td style="font-weight:700;">${r.badge_name}</td>
+        <td style="color:#1a73a7;">${r.pass_name || "-"}</td>
         <td>${r.manager || "-"}</td>
-        <td>${r.stock_in_date ? String(r.stock_in_date).slice(0, 10) : "-"}</td>
+        <td>${r.stock_in_date || "-"}</td>
         <td>${r.stock_in_count ?? "-"}</td>
         <td>${r.days_elapsed != null ? `${r.days_elapsed}일 / ${r.months_elapsed}월` : "-"}</td>
         <td style="color:#d9534f;font-weight:600;">${r.total_deaths ?? 0}</td>
@@ -68,6 +69,7 @@ function buildMortalityReportHtml(report, generatedAt) {
       <thead>
         <tr style="background:#f0f4f0;">
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">뱃지명</th>
+          <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">파스</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">관리자</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">입식일</th>
           <th style="padding:9px 10px;border:1px solid #ddd;text-align:center;">입식두수</th>
@@ -79,7 +81,7 @@ function buildMortalityReportHtml(report, generatedAt) {
         </tr>
       </thead>
       <tbody>
-        ${rows || '<tr><td colspan="9" style="text-align:center;padding:16px;color:#aaa;">활성 뱃지 없음</td></tr>'}
+        ${rows || '<tr><td colspan="10" style="text-align:center;padding:16px;color:#aaa;">활성 뱃지 없음</td></tr>'}
       </tbody>
     </table>
 

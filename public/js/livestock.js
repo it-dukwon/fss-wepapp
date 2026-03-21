@@ -574,11 +574,11 @@ async function editEvent(id, jsonStr) {
 // ─────────────────────────────────────────
 async function loadMortality() {
   const tbody = document.getElementById("mortality-tbody");
-  tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">로딩 중...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">로딩 중...</td></tr>`;
   try {
     const { report } = await apiFetch("/report/mortality");
     if (!report.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">활성 뱃지 없음</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">활성 뱃지 없음</td></tr>`;
       return;
     }
     tbody.innerHTML = report.map((r) => {
@@ -593,6 +593,7 @@ async function loadMortality() {
       const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "%p";
       return `<tr>
         <td style="font-weight:700;">${r.badge_name}</td>
+        <td style="color:#1a73a7;">${r.pass_name || "-"}</td>
         <td>${r.manager || "-"}</td>
         <td>${fmtDate(r.stock_in_date)}</td>
         <td>${fmt(r.stock_in_count)}</td>
@@ -605,7 +606,7 @@ async function loadMortality() {
     }).join("");
     window.initTableSort?.();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="ls-empty">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="ls-empty">${err.message}</td></tr>`;
   }
 }
 

@@ -50,7 +50,7 @@
   }
 
   function initSortable(root) {
-    (root || document).querySelectorAll('.ls-table thead th').forEach(th => {
+    (root || document).querySelectorAll('.ls-table thead th, .st-table thead th').forEach(th => {
       if (th.dataset.sortInit) return; // prevent double-init
       th.dataset.sortInit = '1';
       th.style.cursor = 'pointer';

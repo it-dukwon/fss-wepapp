@@ -488,6 +488,7 @@ app.get("/api/audit-logs", ensureAdmin, async (req, res) => {
     const userUpn     = req.query.user_upn       || null;
     const dateFrom    = req.query.date_from       || null;
     const dateTo      = req.query.date_to         || null;
+    const summary     = req.query.summary         || null;
 
     const conditions = [];
     const params     = [];
@@ -497,6 +498,7 @@ app.get("/api/audit-logs", ensureAdmin, async (req, res) => {
     if (userUpn)      { params.push(`%${userUpn}%`); conditions.push(`user_upn ILIKE $${params.length}`); }
     if (dateFrom)     { params.push(dateFrom); conditions.push(`created_at >= $${params.length}`); }
     if (dateTo)       { params.push(dateTo);   conditions.push(`created_at <  ($${params.length}::date + interval '1 day')`); }
+    if (summary)      { params.push(`%${summary}%`); conditions.push(`summary ILIKE $${params.length}`); }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 

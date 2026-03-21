@@ -7,67 +7,6 @@
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
-    .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: flex-end;
-      margin-bottom: 16px;
-    }
-    .filter-row label {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.78rem;
-      color: #555;
-      gap: 3px;
-    }
-    .filter-row input,
-    .filter-row select {
-      padding: 6px 10px;
-      border: 1px solid #d0d5dd;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      min-width: 140px;
-    }
-    .filter-row button {
-      padding: 6px 16px;
-      border-radius: 6px;
-      border: none;
-      background: #2563eb;
-      color: #fff;
-      font-size: 0.85rem;
-      cursor: pointer;
-      height: 32px;
-    }
-    .filter-row button:hover { background: #1d4ed8; }
-    .filter-row .btn-reset {
-      background: #6b7280;
-    }
-    .filter-row .btn-reset:hover { background: #4b5563; }
-
-    .log-table-wrap {
-      overflow-x: auto;
-    }
-    table.log-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-    }
-    table.log-table th {
-      background: #f1f5f9;
-      color: #374151;
-      padding: 8px 10px;
-      text-align: left;
-      border-bottom: 2px solid #e2e8f0;
-      white-space: nowrap;
-    }
-    table.log-table td {
-      padding: 7px 10px;
-      border-bottom: 1px solid #e9edf3;
-      vertical-align: middle;
-    }
-    table.log-table tr:hover td { background: #f8fafc; }
-
     .badge {
       display: inline-block;
       padding: 2px 8px;
@@ -97,9 +36,11 @@
       border: 1px solid #d0d5dd;
       border-radius: 6px;
       background: #fff;
+      color: #374151;
       cursor: pointer;
       font-size: 0.83rem;
     }
+    .pagination button:hover:not(:disabled) { background: #f1f5f9; }
     .pagination button:disabled { color: #aaa; cursor: default; }
     .pagination button.active {
       background: #2563eb;
@@ -125,10 +66,9 @@
 
   <div class="ls-card">
     <!-- 필터 -->
-    <div class="filter-row">
-      <label>
-        작업 유형
-        <select id="filterAction">
+    <div class="ls-filter-row" style="margin-bottom:16px;flex-wrap:wrap;align-items:flex-end;gap:10px;">
+      <label>작업 유형
+        <select id="filterAction" style="margin-top:3px;">
           <option value="">전체</option>
           <option value="INSERT">등록</option>
           <option value="UPDATE">수정</option>
@@ -140,9 +80,8 @@
           <option value="VIEW">페이지 진입</option>
         </select>
       </label>
-      <label>
-        리소스
-        <select id="filterResource">
+      <label>리소스
+        <select id="filterResource" style="margin-top:3px;">
           <option value="">전체</option>
           <option value="farm">농장</option>
           <option value="feed_company">사료회사</option>
@@ -153,26 +92,28 @@
           <option value="db_server">DB 서버</option>
         </select>
       </label>
-      <label>
-        사용자 (UPN)
-        <input type="text" id="filterUser" placeholder="이메일 일부 입력" />
+      <label>사용자 (UPN)
+        <input type="text" id="filterUser" placeholder="이메일 일부 입력" style="margin-top:3px;" />
       </label>
-      <label>
-        시작일
-        <input type="date" id="filterDateFrom" />
+      <label>요약 검색
+        <input type="text" id="filterSummary" placeholder="요약 내용 검색" style="margin-top:3px;" />
       </label>
-      <label>
-        종료일
-        <input type="date" id="filterDateTo" />
+      <label>시작일
+        <input type="date" id="filterDateFrom" style="margin-top:3px;" />
       </label>
-      <button id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
-      <button id="btnReset" class="btn-reset"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
+      <label>종료일
+        <input type="date" id="filterDateTo" style="margin-top:3px;" />
+      </label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="ls-btn ls-btn-primary" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
+        <button class="ls-btn ls-btn-gray" id="btnReset"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
+      </div>
     </div>
 
     <!-- 테이블 -->
-    <div class="log-table-wrap">
+    <div class="ls-table-wrap">
       <div id="status-msg">로딩 중...</div>
-      <table class="log-table" id="logTable" style="display:none;">
+      <table class="ls-table" id="logTable" style="display:none;">
         <thead>
           <tr>
             <th>#</th>
@@ -192,6 +133,7 @@
     <div class="pagination" id="pagination"></div>
   </div>
 
+  <script src="../js/table-sort.js"></script>
   <script>
   (function () {
     let currentPage = 1;
@@ -202,6 +144,7 @@
         action:        document.getElementById("filterAction").value,
         resource_type: document.getElementById("filterResource").value,
         user_upn:      document.getElementById("filterUser").value.trim(),
+        summary:       document.getElementById("filterSummary").value.trim(),
         date_from:     document.getElementById("filterDateFrom").value,
         date_to:       document.getElementById("filterDateTo").value,
       };
@@ -214,6 +157,7 @@
       if (f.action)        params.set("action",        f.action);
       if (f.resource_type) params.set("resource_type", f.resource_type);
       if (f.user_upn)      params.set("user_upn",      f.user_upn);
+      if (f.summary)       params.set("summary",       f.summary);
       if (f.date_from)     params.set("date_from",     f.date_from);
       if (f.date_to)       params.set("date_to",       f.date_to);
 
@@ -237,6 +181,7 @@
         renderPagination(data.total, data.page, data.limit);
         statusEl.style.display = "none";
         tableEl.style.display = "";
+        if (window.initTableSort) window.initTableSort();
       } catch (err) {
         statusEl.textContent = "로드 실패: " + err.message;
         statusEl.style.color = "#d9534f";
@@ -270,7 +215,7 @@
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">조회된 로그가 없습니다.</td></tr>`;
         return;
       }
-      tbody.innerHTML = logs.map((r, i) => `
+      tbody.innerHTML = logs.map((r) => `
         <tr>
           <td style="color:#aaa;">${r.id}</td>
           <td style="white-space:nowrap;">${toKST(r.created_at)}</td>
@@ -309,6 +254,7 @@
       document.getElementById("filterAction").value = "";
       document.getElementById("filterResource").value = "";
       document.getElementById("filterUser").value = "";
+      document.getElementById("filterSummary").value = "";
       document.getElementById("filterDateFrom").value = "";
       document.getElementById("filterDateTo").value = "";
       loadLogs(1);
@@ -316,8 +262,10 @@
     document.getElementById("filterUser").addEventListener("keydown", e => {
       if (e.key === "Enter") loadLogs(1);
     });
+    document.getElementById("filterSummary").addEventListener("keydown", e => {
+      if (e.key === "Enter") loadLogs(1);
+    });
 
-    // 초기 로드
     loadLogs(1);
   })();
   </script>
