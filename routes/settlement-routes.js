@@ -2,6 +2,11 @@
 const express = require("express");
 const path    = require("path");
 const ExcelJS = require("exceljs");
+const dayjs   = require("dayjs");
+const utc     = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+dayjs.extend(utc);
+dayjs.extend(timezone);
 const { auditLog } = require("../utils/audit-log");
 const { sendMail }  = require("../utils/mailer");
 
@@ -346,7 +351,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       const d = await getSettlementData(batch_id);
       if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
       const buffer = await buildExcelBuffer(d);
-      const filename = `${d.batch.badge_name}_위탁정산서.xlsx`;
+      const today = dayjs().tz("Asia/Seoul").format("YYYYMMDD");
+      const filename = `${d.batch.badge_name}_위탁정산서_${today}.xlsx`;
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
       res.send(buffer);
@@ -367,7 +373,8 @@ module.exports = function settlementRoutes({ runPgQuery }) {
       if (!d) return res.status(404).json({ error: "뱃지를 찾을 수 없습니다." });
 
       const buffer = await buildExcelBuffer(d);
-      const filename = `${d.batch.badge_name}_위탁정산서.xlsx`;
+      const today = dayjs().tz("Asia/Seoul").format("YYYYMMDD");
+      const filename = `${d.batch.badge_name}_위탁정산서_${today}.xlsx`;
 
       const {
         batch,
