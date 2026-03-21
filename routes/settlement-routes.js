@@ -250,12 +250,17 @@ module.exports = function settlementRoutes({ runPgQuery }) {
         });
       }
 
-      // M열 이후(13열~) 셀 값 및 스타일 제거
+      // M열 이후(13열~) 셀 값 및 스타일 완전 제거
       ws.eachRow((row) => {
         row.eachCell({ includeEmpty: true }, (cell) => {
           if (cell.col >= 13) {
             cell.value = null;
             cell.style = {};
+            cell.fill   = { type: "pattern", pattern: "none" };
+            cell.border = {};
+            cell.font   = {};
+            cell.alignment = {};
+            cell.numFmt = "";
           }
         });
       });
